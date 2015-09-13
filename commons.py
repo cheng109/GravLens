@@ -2,9 +2,24 @@
 from astropy.io import fits
 from fastell4py import fastell4py
 import numpy as np
+import matplotlib.pyplot as plt
+
+
+class Constants():
+    def __init__(self, srcSize, imgSize, srcRes, imgRes):
+        self.srcSize = srcSize
+        self.imgSize = imgSize
+        self.srcRes = srcRes
+        self.imgRes = imgRes
+        self.srcXCenter = srcSize[0]/2.0
+        self.srcYCenter = srcSize[1]/2.0
+        self.imgXCenter = imgSize[0]/2.0
+        self.imgYCenter = imgSize[1]/2.0
+
+
 
 class SPEMD:
-    def _init__(self):
+    def __init__(self):
         self.name="SPEMD"
         self.critRad=0
         self.ellipticity = 0
@@ -25,6 +40,8 @@ def writeFitsImage(data, outputName):
     hdu = fits.PrimaryHDU(data)
     hdulist = fits.HDUList([hdu])
     hdulist.writeto(outputName, clobber=True)
+
+
 
 def test_fastelldefl():
     x1 = np.array([1,2,3])
@@ -52,7 +69,52 @@ def getGrid(xStart, xEnd, xStep, yStart, yEnd, yStep, pixelSize):
     return xm, ym
 
 
+def plotGrid(xm, ym):
+    #xm, ym = commons.getGrid(xSize, ySize)
+    plt.plot(xm, ym, '-b')
+    plt.xlim([-0.5, 0.5])
+    plt.plot(ym, xm, '-b')
+    plt.ylim([-0.5,0.5])
+    plt.show()
+
+
+def applyMask(maskFileName, mappingDict):
+
+    maskData = readFitsImage(maskFileName)
+    newMappingDict = {}
+    for i in range(maskData.shape[0]):
+        for j in range(maskData.shape[1]):
+            if maskData[i][j]>0.5:
+                newMappingDict[(i,j)]=mappingDict[(i,j)]
+    return newMappingDict
+
+
+def plotMappingDict(mappingDict,const):
+    #### mappingDict={'imageGrid': srcGrid,  'imageGrid':srcGrid, .....}
+    f, (ax1, ax2) = plt.subplots(1, 2, sharex=True, sharey=True )
+    #### ax1 is for source plane
+    #### ax2 is for image plane
+
+    for key, value in mappingDict.iteritems():
+
+        ax1.plot(value[0], value[1], '*')
+        ax2.plot(key[0], key[1], '*')
+    ax1.set_title('Source plane')
+    ax2.set_title('Image plane')
+
+
+    plt.show()
+
+    return
+
+
+
+
+
+
 def main():
-    test_fastelldefl()
+    return "Nothing to do!"
+
+
 if __name__=='__main__':
     main()
