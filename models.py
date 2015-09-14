@@ -8,21 +8,31 @@ class SPEMD:
         self.name="SPEMD"
         self.critRad=0
         self.ellipticity = 0
-        self.axisRatio = 0
+        self.axisRatio = 1
         self.pa = 0
         self.gamma = 0
         self.coreRad = 0
         self.centerX=0
         self.centerY=0
 
-class SIP:
-    def __init__(self, critRad, axisRatio, pa, centerX, centerY ):
+class SIE:
+    def __init__(self, critRad, axisRatio, pa, centerX, centerY):
         self.name="SIE"
         self.critRad=critRad
         self.axisRatio = axisRatio
         self.pa = pa
         self.centerX = centerX
         self.centerY = centerY
+
+
+
+
+
+class PTMASS:
+    def __init__(self, critRad):
+        self.critRad = critRad
+
+
 
 
 def main():

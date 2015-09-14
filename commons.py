@@ -80,35 +80,32 @@ def applyMask(maskFileName, mappingDict):
 def plotMappingDict(mappingDict,const):
     #### mappingDict={'imageGrid': srcGrid,  'imageGrid':srcGrid, .....}
     f, (ax1, ax2) = plt.subplots(1, 2) #, sharex=True, sharey=True )
-    #### ax1 is for source plane
-    #### ax2 is for image plane
+
     imgPointList = mappingDict.keys()
     srcPointList = mappingDict.values()
+
+    srcXm, srcYm = getGrid(xStart=-2, xEnd=13, xStep=1, yStart=-2, yEnd=13, yStep=1, pixelSize=1)
+    ax1.plot(srcXm, srcYm, 'r-', linewidth=0.5)
+    ax1.plot(srcYm, srcXm, 'r-', linewidth=0.5)
+
 
     for i in range(len(imgPointList)):
         for j in np.arange(i+1, len(imgPointList), 1):
             if (imgPointList[i][0]==imgPointList[j][0] and abs(imgPointList[i][1]-imgPointList[j][1])==1) or (imgPointList[i][1]==imgPointList[j][1] and abs(imgPointList[i][0]-imgPointList[j][0])==1):
                 ax1.plot((srcPointList[i][0], srcPointList[j][0]),(srcPointList[i][1], srcPointList[j][1]) , 'b-')
                 ax2.plot((imgPointList[i][0], imgPointList[j][0]),(imgPointList[i][1], imgPointList[j][1]) , 'b-')
-    plt.show()
-
-    for key, value in mappingDict.iteritems():
-
-
-        ax1.plot(value[0], value[1], '*')
-        ax2.plot(key[0], key[1], '*')
-
-
     ax1.set_title('Source plane')
     ax2.set_title('Image plane')
-
-
     plt.show()
 
-    return
 
 
 
+
+def lm_arctanh(x):
+    if x<-1 or x>1:
+        print "x should be between -1 and 1"
+    return np.log(np.sqrt((1.0+x)/(1.0-x)))
 
 
 
