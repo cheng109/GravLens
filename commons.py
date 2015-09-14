@@ -18,18 +18,6 @@ class Constants():
 
 
 
-class SPEMD:
-    def __init__(self):
-        self.name="SPEMD"
-        self.critRad=0
-        self.ellipticity = 0
-        self.axisRatio = 0
-        self.pa = 0
-        self.gamma = 0
-        self.coreRad = 0
-        self.centerX=0
-        self.centerY=0
-
 def readFitsImage(imageName):
     hdulist = fits.open(imageName)
     data =  hdulist[0].data
@@ -91,14 +79,26 @@ def applyMask(maskFileName, mappingDict):
 
 def plotMappingDict(mappingDict,const):
     #### mappingDict={'imageGrid': srcGrid,  'imageGrid':srcGrid, .....}
-    f, (ax1, ax2) = plt.subplots(1, 2, sharex=True, sharey=True )
+    f, (ax1, ax2) = plt.subplots(1, 2) #, sharex=True, sharey=True )
     #### ax1 is for source plane
     #### ax2 is for image plane
+    imgPointList = mappingDict.keys()
+    srcPointList = mappingDict.values()
+
+    for i in range(len(imgPointList)):
+        for j in np.arange(i+1, len(imgPointList), 1):
+            if (imgPointList[i][0]==imgPointList[j][0] and abs(imgPointList[i][1]-imgPointList[j][1])==1) or (imgPointList[i][1]==imgPointList[j][1] and abs(imgPointList[i][0]-imgPointList[j][0])==1):
+                ax1.plot((srcPointList[i][0], srcPointList[j][0]),(srcPointList[i][1], srcPointList[j][1]) , 'b-')
+                ax2.plot((imgPointList[i][0], imgPointList[j][0]),(imgPointList[i][1], imgPointList[j][1]) , 'b-')
+    plt.show()
 
     for key, value in mappingDict.iteritems():
 
+
         ax1.plot(value[0], value[1], '*')
         ax2.plot(key[0], key[1], '*')
+
+
     ax1.set_title('Source plane')
     ax2.set_title('Image plane')
 

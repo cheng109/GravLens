@@ -23,7 +23,7 @@ def inverseMapping(srcData,imgData, mappingImage, lens, const):
         for j in range(mappingImage.shape[0]):
             _, _, I, J = deflection.getDeflection(i, j, 'SPEMD',const)
             mappingDict[(i,j)]= (I, J)
-            if I<srcDimX and J<srcDimY:
+            if I<const.srcSize[0] and J<const.srcSize[1] and I >0 and J>0:
                 mappingImage[i][j]= srcData[I][J]
 
     #### mappingDict={'imageGrid': srcGrid,  'imageGrid':srcGrid, .....}
@@ -41,7 +41,7 @@ def inverseMapping(srcData,imgData, mappingImage, lens, const):
 def main():
     dirName= "test_images/"
     imgData = commons.readFitsImage(dirName + "model_img.fits")
-    srcData = commons.readFitsImage(dirName + "model_src_parameter_config.fits")
+    srcData = commons.readFitsImage(dirName + "model_src.fits")
     varData = commons.readFitsImage(dirName+ "var.fits.gz")
     psfData = commons.readFitsImage(dirName+ "psf.fits.gz")
     const = commons.Constants(srcData.shape,imgData.shape,0.15, 0.05)

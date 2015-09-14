@@ -12,7 +12,7 @@ def getDeflection(imgX, imgY, model,const):
         PA = 67.5419
         gam = 0.58
         coreRad = 0.05
-        q = 0.3#0.5*critRad*pow((2-2*gam)/arat, gam)
+        q = 50.03#0.5*critRad*pow((2-2*gam)/arat, gam)
         s = coreRad**2
 
         imgX = (imgX-const.imgXCenter)*const.imgRes
