@@ -14,20 +14,24 @@ def getLensOperator(mappingDict):
     srcPosition = []
     d =  np.zeros(dim)
 
+    normV = [[] for i in range(dim)]
+
     srcBrightNess = np.ones(dim)
+    varList = []
     sXDev = np.zeros(dim)
     sYDev = np.zeros(dim)
     for i in range(dim):
         imgX, imgY = imgPointList[i]
-        srcX, srcY, imgBrightNess, type = srcPointList[i]
+        srcX, srcY, imgBrightNess, type, var = srcPointList[i]
         srcPosition.append((srcX, srcY))
+        varList.append(var)
         d[i] = imgBrightNess
         if (imgX, imgY+1) in imgPointList:
             x1, y1 = srcX, srcY
             x2, y2 = (mappingDict[(imgX,imgY+1)][0], mappingDict[(imgX,imgY+1)][1])
             index = imgPointList.index((imgX, imgY+1))
-            sXDev[i] = (srcBrightNess[index]-srcBrightNess[i])/(x2-x1)
-            sYDev[i] = (srcBrightNess[index]-srcBrightNess[i])/(y2-y1)
+            #sXDev[i] = (srcBrightNess[index]-srcBrightNess[i])/(x2-x1)
+            #sYDev[i] = (srcBrightNess[index]-srcBrightNess[i])/(y2-y1)
 
         if type=='o' and (imgX, imgY-1) in imgPointList and (imgX, imgY+1) in imgPointList and (imgX+1, imgY) in imgPointList:
             w1Index = imgPointList.index((imgX, imgY-1))
@@ -38,22 +42,41 @@ def getLensOperator(mappingDict):
             C = (mappingDict[(imgX+1,imgY)][0], mappingDict[(imgX+1,imgY)][1])
 
             L[i][w1Index], L[i][w2Index],L[i][w3Index] = commons.getTriWeight(A,B,C, (srcX, srcY))
+            # update the normV
+            An = (A[0], A[1], srcBrightNess[w1Index])
+            Bn = (B[0], B[1], srcBrightNess[w2Index])
+            Cn = (C[0], C[1], srcBrightNess[w3Index])
+
+            n0, n1, n2 = commons.getNormVectors(An, Bn, Cn)
+            normV[w1Index].append((n0, n1, n2))
+            normV[w2Index].append((n0, n1, n2))
+            normV[w3Index].append((n0, n1, n2))
         else:
             L[i][i] =1
 
-    #print np.linalg.matrix_rank(L)
-    #s = np.linalg.solve(L,d)
-    # Now we have the 'SrcPosition' and 'SrcBrightness'
-    return L, srcPointList,sXDev, sYDev
+        # Diagonal covariance matrix:
+        C = commons.listToDiagonalMatrix(varList)
 
 
-def getPSFOperator(psfFileName):
+
+    return srcPosition, srcPointList, L, normV, C
+
+
+
+def getPSFMatrix(psfFileName):
     B, _= commons.readFitsImage(psfFileName)
     return B
 
+def getVarianceMatrix(varFileName):
 
-def getMatrixDs(sXDev,sYDev, const):
+
+    return
+
+
+def getMatrixDs():
     # Assume the source vector 's' is sorted
+
+
     xdim, ydim = const.potSize
     DsMatrix = np.zeros((xdim, ydim))
     for i in range(xdim):

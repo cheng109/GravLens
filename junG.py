@@ -11,7 +11,9 @@ def inverseMapping(srcData,imgData, mappingImage, lens, const):
     #### mappingDict={'imageGrid': srcGrid,  'imageGrid':srcGrid, .....}
     mappingDict = {}
     maskFileName = 'test_images/mask.fits'
+    varFileName = 'test_images/var.fits.gz'
     maskData, mVector = commons.readFitsImage(maskFileName)
+    varData, varVector = commons.readFitsImage(varFileName)
 
 
 
@@ -24,12 +26,12 @@ def inverseMapping(srcData,imgData, mappingImage, lens, const):
                     type = 'v'
                 else:
                     type = 'o'
-                mappingDict[(i,j)]= (srcX, srcY, imgData[i][j], type)
+                mappingDict[(i,j)]= (srcX, srcY, imgData[i][j], type, varData[i][j])
                 if srcX<const.srcSize[0] and srcY<const.srcSize[1] and srcX >0 and srcY>0:
                     mappingImage[i][j]= srcData[srcX][srcY]
     #commons.plotMappingDict(mappingDict, const)
 
-    return mappingDict, mappingImage
+    return mappingDict
 
 
 
@@ -41,14 +43,19 @@ def main():
     varData, vVector = commons.readFitsImage(dirName+ "var.fits.gz")
     B, _= commons.readFitsImage(dirName+ "psf.fits.gz")
     srcData = np.zeros((80,80))
-    const = commons.Constants(srcData.shape,imgData.shape, potSize=potSize,srcRes=0.02, imgRes=0.05, potRes=0.05)
+    const = commons.Constants(srcData.shape,imgData.shape, potSize=imgData.shape,srcRes=0.02, imgRes=0.05, potRes=0.05)
 
     #plt.imshow(np.reshape(dVector, (imgData.shape[0], imgData.shape[1])),origin="lower")
     #plt.imshow(B, origin="lower", interpolation="nearest")
 
-    mappingDict, mappingImage = inverseMapping(srcData, imgData,  mappingImage=imgData, lens=0, const=const)
-    srcPosition, srcBrightNess, sXDev, sYDev = construction.getLensOperator(mappingDict)
-    srcMap = commons.recoverSource(srcPosition, srcBrightNess, const)
+    mappingDict = inverseMapping(srcData, imgData,  mappingImage=imgData, lens=0, const=const)
+    srcPosition, srcPointList, L, normV, C = construction.getLensOperator(mappingDict)
+
+
+
+    srcBrightNess = [x[2] for x in srcPointList]
+    srcMap = commons.pixelizeSource(srcPosition, srcBrightNess, const)
+
     plt.imshow(srcMap, origin="lower", interpolation="nearest")
     plt.show()
     #commons.writeFitsImage(srcMap, "model_test.fits")

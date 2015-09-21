@@ -69,8 +69,7 @@ def createGirdFilter(xlen, ylen):
                 filter[i][j]=1
     return filter
 
-def recoverSource(srcPosition, srcBrightNess , const):
-
+def pixelizeSource(srcPosition, srcBrightNess , const):
 
     srcMap = np.zeros(const.srcSize)
     for i in range(len(srcPosition)):
@@ -98,8 +97,47 @@ def getTriWeight(A,B,C, P):
     return areaA/S, areaB/S, areaC/S
 
 
+
+def getMeanNorm(normV):
+    meanNorm = []
+    for i in range(len(normV)):
+        if len(normV[i])==0:
+            meanNorm.append((0,0,0))
+        sumN0,sumN1, sumN2, counter = 0, 0, 0, 0
+        for (n0, n1, n2) in normV[i]:
+            sumN0 += n0
+            sumN1 += n1
+            sumN2 += n2
+            counter += 1
+        meanNorm.append((sumN0/counter, sumN1/counter, sumN2/counter))
+    return meanNorm
+
+
 ### Build lens operator
 
+
+
+def getNormVectors(A, B, O):
+
+    a1 = A[0] - O[0]
+    a2 = A[1] - O[1]
+    a3 = A[2] - O[2]
+    b1 = B[0] - O[0]
+    b2 = B[1] - O[1]
+    b3 = B[2] - O[2]
+
+    n0 = a2*b3-a3*b2
+    n1 = -(a1*b3-a3*b1)
+    n2 = a1*b2-a2*b1
+    return n0, n1, n2
+
+
+def listToDiagonalMatrix(l):
+    dim = len(l)
+    D = np.zeros((dim,dim))
+    for i in range(dim):
+        D[i][i]= l[i]
+    return D
 
 
 def plotMappingDict(mappingDict,const):
