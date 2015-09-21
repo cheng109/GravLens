@@ -6,11 +6,15 @@ import matplotlib.pyplot as plt
 
 
 class Constants():
-    def __init__(self, srcSize, imgSize, srcRes, imgRes):
+    def __init__(self, srcSize, imgSize,potSize, srcRes, imgRes, potRes):
         self.srcSize = srcSize
         self.imgSize = imgSize
+        self.potSize = potSize
         self.srcRes = srcRes
         self.imgRes = imgRes
+        self.potRes = potRes
+
+
         self.srcXCenter = srcSize[0]/2.0
         self.srcYCenter = srcSize[1]/2.0
         self.imgXCenter = imgSize[0]/2.0

@@ -27,11 +27,6 @@ def inverseMapping(srcData,imgData, mappingImage, lens, const):
                 mappingDict[(i,j)]= (srcX, srcY, imgData[i][j], type)
                 if srcX<const.srcSize[0] and srcY<const.srcSize[1] and srcX >0 and srcY>0:
                     mappingImage[i][j]= srcData[srcX][srcY]
-
-
-
-
-
     #commons.plotMappingDict(mappingDict, const)
 
     return mappingDict, mappingImage
@@ -46,21 +41,17 @@ def main():
     varData, vVector = commons.readFitsImage(dirName+ "var.fits.gz")
     B, _= commons.readFitsImage(dirName+ "psf.fits.gz")
     srcData = np.zeros((80,80))
-    const = commons.Constants(srcData.shape,imgData.shape,srcRes=0.02, imgRes=0.05)
+    const = commons.Constants(srcData.shape,imgData.shape, potSize=potSize,srcRes=0.02, imgRes=0.05, potRes=0.05)
 
     #plt.imshow(np.reshape(dVector, (imgData.shape[0], imgData.shape[1])),origin="lower")
     #plt.imshow(B, origin="lower", interpolation="nearest")
 
-
-    #getModelImage()
     mappingDict, mappingImage = inverseMapping(srcData, imgData,  mappingImage=imgData, lens=0, const=const)
-    srcPosition, srcBrightNess = construction.getLensOperator(mappingDict)
+    srcPosition, srcBrightNess, sXDev, sYDev = construction.getLensOperator(mappingDict)
     srcMap = commons.recoverSource(srcPosition, srcBrightNess, const)
-    commons.writeFitsImage(srcMap, "model_test.fits")
-
-
-
-
+    plt.imshow(srcMap, origin="lower", interpolation="nearest")
+    plt.show()
+    #commons.writeFitsImage(srcMap, "model_test.fits")
 
 
 if __name__=='__main__':
