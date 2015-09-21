@@ -17,9 +17,6 @@ def getDeflection(imgX, imgY, model,const):
         coreRad = 0.05
         q = 50.03#0.5*critRad*pow((2-2*gam)/arat, gam)
         s = coreRad**2
-
-
-
         deflx, defly= fastell4py.fastelldefl(imgX, imgY,  q, gam, arat, s)
         pdeflx = deflx
         pdefly = defly
@@ -34,13 +31,11 @@ def getDeflection(imgX, imgY, model,const):
         q = LM_SIE.axisRatio
         if q==1:
             q=0.999
-
         root1mq = math.sqrt(1.0-q**2)
         phi = math.sqrt(q**2*(core**2+x1**2)+y1**2)
         fac = LM_SIE.critRad*math.sqrt(q)/root1mq
         deflx = fac*math.atan(root1mq*x1/(phi+core))
         defly = fac*commons.lm_arctanh(root1mq*y1/(phi+core*LM_SIE.axisRatio**2))
-
         # Rotate back
         pdeflx = deflx
         pdefly = defly

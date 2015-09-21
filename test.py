@@ -52,8 +52,8 @@ def test_generateEllGaussianImage(fitsName):
 #    print results
 
 def main():
-    test_generateEllGaussianImage("ellGaussianTest_0.01.fits")
-
+    #test_generateEllGaussianImage("ellGaussianTest_0.01.fits")
+    print commons.getTriWeight([0,0], [0, 3], [4, 0], [2,1])
     return 0
 
     #testWholeGridMapping(const)

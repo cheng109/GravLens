@@ -26,9 +26,6 @@ class SIE:
 
 
 
-
-
-
 class PTMASS:
     def __init__(self, critRad):
         self.critRad = critRad
@@ -37,8 +34,7 @@ class PTMASS:
 
 
 def main():
-    return "Nothing"
-
+    return
 
 if __name__ == "__main__":
     main()

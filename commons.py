@@ -22,40 +22,19 @@ def readFitsImage(imageName):
     hdulist = fits.open(imageName)
     data =  hdulist[0].data
     hdulist.close()
-    return data
+    vector = np.reshape(data, data.shape[0]*data.shape[1])
+    return data, vector
 
 def writeFitsImage(data, outputName):
     hdu = fits.PrimaryHDU(data)
     hdulist = fits.HDUList([hdu])
     hdulist.writeto(outputName, clobber=True)
 
-
-
-def test_fastelldefl():
-    x1 = np.array([1,2,3])
-    x2 = np.array([3,2,1])
-    q = 0.9
-    gam = 0.5
-    arat = 0.9
-    s = 0.01
-    alpha1, alpha2 = fastell4py.fastelldefl(x1, x2, q, gam, arat, s)
-    print alpha1, alpha2, 'alpha1, alpha2'
-    assert alpha1[0] == 0.49802187030058409
-    assert alpha2[0] == 1.604771432322617
-
-    x1 = 1.
-    x2 = 3.
-    alpha1_new, alpha2_new = fastell4py.fastelldefl(x1, x2, q, gam, arat, s)
-    assert alpha1_new == alpha1[0]
-    assert alpha2_new == alpha2[0]
-
-
 def getGrid(xStart, xEnd, xStep, yStart, yEnd, yStep, pixelSize):
     x = [pixelSize*x for x in np.arange(xStart, xEnd, xStep)]
     y = [pixelSize*y for y in np.arange(yStart,yEnd, yStep)]
     xm, ym = np.meshgrid(x, y)
     return xm, ym
-
 
 def plotGrid(xm, ym):
     #xm, ym = commons.getGrid(xSize, ySize)
@@ -68,7 +47,7 @@ def plotGrid(xm, ym):
 
 def applyMask(maskFileName, mappingDict):
 
-    maskData = readFitsImage(maskFileName)
+    maskData, mVector = readFitsImage(maskFileName)
     newMappingDict = {}
     for i in range(maskData.shape[0]):
         for j in range(maskData.shape[1]):
@@ -77,25 +56,83 @@ def applyMask(maskFileName, mappingDict):
     return newMappingDict
 
 
+def createGirdFilter(xlen, ylen):
+
+    filter = np.zeros([xlen,ylen])
+    for i in range(xlen):
+        for j in range(ylen):
+            if (i+j)%2==1:
+                filter[i][j]=1
+    return filter
+
+def recoverSource(srcPosition, srcBrightNess , const):
+
+
+    srcMap = np.zeros(const.srcSize)
+    for i in range(len(srcPosition)):
+        x, y = srcPosition[i]
+        if x<const.srcSize[0]-1 and y<const.srcSize[1]-1:
+            srcMap[int(x)][int(y)] +=  srcBrightNess[i]
+
+    # return a pixelized source map.
+    return srcMap
+
+def getTriWeight(A,B,C, P):
+    def area(a, b, c):
+        def distance(p1, p2):
+            return np.hypot(p1[0]-p2[0], p1[1]-p2[1])
+
+        side_a = distance(a, b)
+        side_b = distance(b, c)
+        side_c = distance(c, a)
+        s = 0.5 * ( side_a + side_b + side_c)
+        return np.sqrt(s * (s - side_a) * (s - side_b) * (s - side_c))
+    areaA = area(P, B, C)
+    areaB = area(P, A, C)
+    areaC = area(P, A, B)
+    S = areaA+areaB + areaC
+    return areaA/S, areaB/S, areaC/S
+
+
+### Build lens operator
+
+
+
 def plotMappingDict(mappingDict,const):
-    #### mappingDict={'imageGrid': srcGrid,  'imageGrid':srcGrid, .....}
+   #### mappingDict={'imageGrid': srcGrid,  'imageGrid':srcGrid, .....}
     f, (ax1, ax2) = plt.subplots(1, 2) #, sharex=True, sharey=True )
 
     imgPointList = mappingDict.keys()
     srcPointList = mappingDict.values()
 
-    srcXm, srcYm = getGrid(xStart=-2, xEnd=13, xStep=1, yStart=-2, yEnd=13, yStep=1, pixelSize=1)
-    ax1.plot(srcXm, srcYm, 'r-', linewidth=0.5)
-    ax1.plot(srcYm, srcXm, 'r-', linewidth=0.5)
+
 
 
     for i in range(len(imgPointList)):
+        imgX, imgY = imgPointList[i]
+        srcX, srcY, _ , type = srcPointList[i]
+
+        if type=='v' and (imgX, imgY+2) in mappingDict and (imgX+1, imgY+1) in mappingDict:
+
+            ax1.plot((srcX, mappingDict[(imgX, imgY+2)][0]), (srcY, mappingDict[(imgX, imgY+2)][1]), 'b-')
+            ax1.plot((srcX, mappingDict[(imgX+1, imgY+1)][0]), (srcY, mappingDict[(imgX+1, imgY+1)][1]), 'b-')
+            ax1.plot((mappingDict[(imgX, imgY+2)][0], mappingDict[(imgX+1, imgY+1)][0]), (mappingDict[(imgX, imgY+2)][1], mappingDict[(imgX+1, imgY+1)][1]), 'b-')
+        # plot  the lensed image plane grid
         for j in np.arange(i+1, len(imgPointList), 1):
             if (imgPointList[i][0]==imgPointList[j][0] and abs(imgPointList[i][1]-imgPointList[j][1])==1) or (imgPointList[i][1]==imgPointList[j][1] and abs(imgPointList[i][0]-imgPointList[j][0])==1):
-                ax1.plot((srcPointList[i][0], srcPointList[j][0]),(srcPointList[i][1], srcPointList[j][1]) , 'b-')
+                #ax1.plot((srcPointList[i][0], srcPointList[j][0]),(srcPointList[i][1], srcPointList[j][1]) , 'b-')
                 ax2.plot((imgPointList[i][0], imgPointList[j][0]),(imgPointList[i][1], imgPointList[j][1]) , 'b-')
+        # plot the 'vertex' and 'ohters'
+        if type=='v':
+            ax2.plot(imgX, imgY, 'ro')
+            ax1.plot(srcX, srcY, 'ro')
+        else:
+            ax1.plot(srcX, srcY, 'wo')
+            ax2.plot(imgX, imgY, 'wo')
+
     ax1.set_title('Source plane')
     ax2.set_title('Image plane')
+
     plt.show()
 
 
@@ -107,9 +144,11 @@ def lm_arctanh(x):
         print "x should be between -1 and 1"
     return np.log(np.sqrt((1.0+x)/(1.0-x)))
 
-
-
 def main():
+
+    filter= createGirdFilter(50, 50 )
+    plt.imshow(filter, interpolation="nearest")
+    plt.show()
     return "Nothing to do!"
 
 
