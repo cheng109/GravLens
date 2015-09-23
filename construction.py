@@ -12,28 +12,25 @@ def getLensOperator(mappingDict):
     imgPointList = mappingDict.keys()
     srcPointList = mappingDict.values()
     srcPosition = []
+    indexWeightList = []
+
     d =  np.zeros(dim)
 
     normV = [[] for i in range(dim)]
 
     srcBrightNess = np.ones(dim)
     varList = []
-    sXDev = np.zeros(dim)
-    sYDev = np.zeros(dim)
+    #sXDev = np.zeros(dim)
+    #sYDev = np.zeros(dim)
     for i in range(dim):
         imgX, imgY = imgPointList[i]
         srcX, srcY, imgBrightNess, type, var = srcPointList[i]
         srcPosition.append((srcX, srcY))
         varList.append(var)
         d[i] = imgBrightNess
-        if (imgX, imgY+1) in imgPointList:
-            x1, y1 = srcX, srcY
-            x2, y2 = (mappingDict[(imgX,imgY+1)][0], mappingDict[(imgX,imgY+1)][1])
-            index = imgPointList.index((imgX, imgY+1))
-            #sXDev[i] = (srcBrightNess[index]-srcBrightNess[i])/(x2-x1)
-            #sYDev[i] = (srcBrightNess[index]-srcBrightNess[i])/(y2-y1)
 
         if type=='o' and (imgX, imgY-1) in imgPointList and (imgX, imgY+1) in imgPointList and (imgX+1, imgY) in imgPointList:
+
             w1Index = imgPointList.index((imgX, imgY-1))
             w2Index = imgPointList.index((imgX, imgY+1))
             w3Index = imgPointList.index((imgX+1, imgY))
@@ -51,47 +48,69 @@ def getLensOperator(mappingDict):
             normV[w1Index].append((n0, n1, n2))
             normV[w2Index].append((n0, n1, n2))
             normV[w3Index].append((n0, n1, n2))
+            indexWeightList.append((w1Index, w2Index, w3Index, L[i][w1Index], L[i][w2Index],L[i][w3Index]))
         else:
             L[i][i] =1
-
+            indexWeightList.append((i, i, i , 1/3.0,1/3.0,1/3.0))
         # Diagonal covariance matrix:
-        C = commons.listToDiagonalMatrix(varList)
+    C = commons.listToDiagonalMatrix(varList)
+    normV = commons.getMeanNorm(normV)
+
+    return srcPosition, srcPointList, L, normV, C, indexWeightList, d
 
 
 
-    return srcPosition, srcPointList, L, normV, C
+def getPSFMatrix(psfFileName, const):
+    psfMatrix, _= commons.readFitsImage(psfFileName)
+    normalizedPSF = psfMatrix/np.sum(psfMatrix)
+    M, N  = const.imgSize
+    B = np.zeros((M*N, M*N))
+    xlim, ylim = normalizedPSF.shape
 
-
-
-def getPSFMatrix(psfFileName):
-    B, _= commons.readFitsImage(psfFileName)
+    for u in range(xlim):
+        for v in range(ylim):
+            for h in range(M*N):
+                if h+u>=0 and h+u<=M-1 and h+v>=0 and h+v<=N-1:
+                    g=(h+u)+(h+v-1)*(M-1)
+                    B[g][h]=normalizedPSF[u][v]
     return B
 
-def getVarianceMatrix(varFileName):
 
+def getPenalty(M, r, d, Hs, s, Hphi,phi, lambdaS, lambdaPhi):
 
-    return
+    residual = np.outer(M, r)-d
+    chiSquare = np.transpose(residual)*np.linalg.inv(C)*residual
+    regSource = lambdaS**2*np.linalg.norm(np.outer(Hs, s))**2
+    regPot    = lambdaPhi**2*np.linalg.norm(np.outer(Hphi,phi))**2
+    return chiSquare+regSource+regPot
 
-
-def getMatrixDs():
+def getMatrixDs(normV,indexWeightList, const):
     # Assume the source vector 's' is sorted
-
-
-    xdim, ydim = const.potSize
+    xdim =len(indexWeightList)
+    ydim = 2*xdim
     DsMatrix = np.zeros((xdim, ydim))
-    for i in range(xdim):
-        for j in range(ydim):
+    print len(indexWeightList)
+    for i in range(len(indexWeightList)):
 
-            DsMatrix[i][2*i] = sXDev[i]
-            DsMatrix[i][2*i+1]=sYDev[i]
-
-
+        indexA, indexB, indexC, wA, wB, wC = indexWeightList[i]
+        if not normV[i]:
+            nA0, nA1, nA2 = normV[indexA]
+            nB0, nB1, nB2 = normV[indexB]
+            nC0, nC1, nC2 = normV[indexC]
+            dSp_y1 = wA*(-nA0/nA2)  + wB*(-nB0/nB2) + wC*(-nC0/nC2)
+            dSp_y2 = wA*(-nA1/nA2)  + wB*(-nB1/nB2) + wC*(-nC1/nC2)
+        else:
+            n0, n1, n2 = normV[i]
+            if n2==0:
+                dSp_y1=0
+                dSp_y2=0
+            else:
+                dSp_y1 = -n0/n2
+                dSp_y2 = -n1/n2
+        #print i
+        DsMatrix[i][2*i]    = dSp_y1
+        DsMatrix[i][2*i+1]  = dSp_y2
     return DsMatrix
-
-
-def initialDphi(d, imgPosition):
-    dPhi = d
-    potPosition = imgPosition
 
 def getMatrixDphi(dPhiGrid, potPosition, D, const):
     xdim, ydim = const.potSize
@@ -105,7 +124,6 @@ def getMatrixDphi(dPhiGrid, potPosition, D, const):
     return DphiMatrix
 
 def main():
-
     return
 
 

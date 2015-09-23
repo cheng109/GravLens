@@ -3,7 +3,7 @@ from astropy.io import fits
 from fastell4py import fastell4py
 import numpy as np
 import matplotlib.pyplot as plt
-
+import pyregion
 
 class Constants():
     def __init__(self, srcSize, imgSize,potSize, srcRes, imgRes, potRes):
@@ -13,14 +13,31 @@ class Constants():
         self.srcRes = srcRes
         self.imgRes = imgRes
         self.potRes = potRes
-
-
         self.srcXCenter = srcSize[0]/2.0
         self.srcYCenter = srcSize[1]/2.0
         self.imgXCenter = imgSize[0]/2.0
         self.imgYCenter = imgSize[1]/2.0
 
 
+def filterImage(maskFileName, imageFileName, filterType):
+    imgList = []
+    imgData, _ = readFitsImage(imageFileName)
+    if filterType=="REG":
+        hdulist = pyfits.open(imageFileName)
+        maskData = pyfits.parse(reg).get_mask(hdu=hdulist[0])
+    if filterType=="FITS":
+        maskData, _= readFitsImage(maskFileName)
+        assert (maskData.shape==imgData.shape), "Mask shape does not match image shape!"
+    xlim, ylim = imgData.shape
+    for i in range(xlim):
+        for j in range(ylim):
+            if maskData[i][j]!=0:
+                if (i+j)%2 ==1:
+                    type = 'v'
+                else:
+                    type = 'o'
+                imgList.append((i,j, imgData[i][j], type))
+    return imgList
 
 def readFitsImage(imageName):
     hdulist = fits.open(imageName)
@@ -61,7 +78,6 @@ def applyMask(maskFileName, mappingDict):
 
 
 def createGirdFilter(xlen, ylen):
-
     filter = np.zeros([xlen,ylen])
     for i in range(xlen):
         for j in range(ylen):
@@ -70,13 +86,11 @@ def createGirdFilter(xlen, ylen):
     return filter
 
 def pixelizeSource(srcPosition, srcBrightNess , const):
-
     srcMap = np.zeros(const.srcSize)
     for i in range(len(srcPosition)):
         x, y = srcPosition[i]
         if x<const.srcSize[0]-1 and y<const.srcSize[1]-1:
             srcMap[int(x)][int(y)] +=  srcBrightNess[i]
-
     # return a pixelized source map.
     return srcMap
 
@@ -84,7 +98,6 @@ def getTriWeight(A,B,C, P):
     def area(a, b, c):
         def distance(p1, p2):
             return np.hypot(p1[0]-p2[0], p1[1]-p2[1])
-
         side_a = distance(a, b)
         side_b = distance(b, c)
         side_c = distance(c, a)
@@ -103,33 +116,26 @@ def getMeanNorm(normV):
     for i in range(len(normV)):
         if len(normV[i])==0:
             meanNorm.append((0,0,0))
-        sumN0,sumN1, sumN2, counter = 0, 0, 0, 0
-        for (n0, n1, n2) in normV[i]:
-            sumN0 += n0
-            sumN1 += n1
-            sumN2 += n2
-            counter += 1
-        meanNorm.append((sumN0/counter, sumN1/counter, sumN2/counter))
+        else:
+            sumN0,sumN1, sumN2, counter = 0, 0, 0, 0
+            for j in range(len(normV[i])):
+                n0, n1, n2 = normV[i][j]
+                sumN0 += n0
+                sumN1 += n1
+                sumN2 += n2
+                counter += 1
+            meanNorm.append((sumN0/counter, sumN1/counter, sumN2/counter))
     return meanNorm
 
+def getNormVectors(p1,p2, p3):
+    p1x, p1y, p1z = p1
+    p2x, p2y, p2z = p2
+    p3x, p3y, p3z = p3
 
-### Build lens operator
-
-
-
-def getNormVectors(A, B, O):
-
-    a1 = A[0] - O[0]
-    a2 = A[1] - O[1]
-    a3 = A[2] - O[2]
-    b1 = B[0] - O[0]
-    b2 = B[1] - O[1]
-    b3 = B[2] - O[2]
-
-    n0 = a2*b3-a3*b2
-    n1 = -(a1*b3-a3*b1)
-    n2 = a1*b2-a2*b1
-    return n0, n1, n2
+    nx = (p3y-p2y)*(p2z-p1z)-(p3z-p2z)*(p2y-p1y)
+    ny = (p3z-p2z)*(p2x-p1x)-(p3x-p2x)*(p2z-p1z)
+    nz = (p3x-p2x)*(p2y-p1y)-(p3y-p2y)*(p2x-p1x)
+    return nx, ny, nz
 
 
 def listToDiagonalMatrix(l):
@@ -152,7 +158,7 @@ def plotMappingDict(mappingDict,const):
 
     for i in range(len(imgPointList)):
         imgX, imgY = imgPointList[i]
-        srcX, srcY, _ , type = srcPointList[i]
+        srcX, srcY, _ , type, _ = srcPointList[i]
 
         if type=='v' and (imgX, imgY+2) in mappingDict and (imgX+1, imgY+1) in mappingDict:
 
