@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import pyregion
 
 class Constants():
-    def __init__(self, srcSize, imgSize,potSize, srcRes, imgRes, potRes):
+    def __init__(self, srcSize, imgSize,potSize, srcRes, imgRes, potRes, length):
         self.srcSize = srcSize
         self.imgSize = imgSize
         self.potSize = potSize
@@ -17,6 +17,7 @@ class Constants():
         self.srcYCenter = srcSize[1]/2.0
         self.imgXCenter = imgSize[0]/2.0
         self.imgYCenter = imgSize[1]/2.0
+        self.length = length
 
 
 def filterImage(maskFileName, imageFileName, filterType):
@@ -109,6 +110,46 @@ def getTriWeight(A,B,C, P):
     S = areaA+areaB + areaC
     return areaA/S, areaB/S, areaC/S
 
+def getPentWeigth(A, B, C, D, E):
+    # C is the center point
+    Q = getLinerInterpolate(A, B,C, direction='x')
+    P = getLinerInterpolate(D, E, C, direction='x')
+
+    M = getLinerInterpolate(B, E, C, direction='y')
+    N = getLinerInterpolate(A, D, C, direction='y')
+
+    XweightA = dist(Q, B)/(dist(C,Q)*dist(A,B))
+    XweightB = dist(Q, A)/(dist(C,Q)*dist(A,B))
+    XweightC = -(1/dist(C,P)+1/dist(C,Q))
+    XweightD = dist(P, E)/(dist(C, P)*dist(D, E))
+    XweightE = dist(P, D)/(dist(C, P)*dist(D, E))
+
+    YweightA = dist(N, D)/(dist(C, N)*dist(A,D))
+    YweightB = dist(M, E)/(dist(C,M)*dist(B,E))
+    YweightC = -(1/dist(C,N)+1/dist(C,M))
+    YweightD = dist(A, N)/(dist(C, N)*dist(A,D))
+    YweightE = dist(B, M)/(dist(C, M)*dist(B,E))
+
+    return XweightA,XweightB,XweightC,XweightD,XweightE, YweightA,YweightB,YweightC,YweightD,YweightE
+
+def dist(A, B):
+    return np.sqrt((A[0]-B[0])**2+(A[1]-B[1])**2)
+
+def getLinerInterpolate(A, B, C, direction):
+    xA,yA = A
+    xB,yB = B
+    xC,yC = C
+
+    if abs(xA-xB) < 10e-8:
+        P = ((xA+xB)*0.5, yC)
+    else:
+        a = float(yA-yB)/(xA-xB)
+        b = yA - a*xA
+        if direction=='x':
+            P = ((yC-b)/a, yC)
+        if direction=='y':
+            P = (xC, a*xC+b)
+    return P
 
 
 def getMeanNorm(normV):
@@ -185,7 +226,9 @@ def plotMappingDict(mappingDict,const):
 
 
 
-
+def disp(data):
+    plt.imshow(data, origin="lower", interpolation="nearest")
+    plt.show()
 
 def lm_arctanh(x):
     if x<-1 or x>1:
@@ -194,9 +237,19 @@ def lm_arctanh(x):
 
 def main():
 
-    filter= createGirdFilter(50, 50 )
-    plt.imshow(filter, interpolation="nearest")
-    plt.show()
+    #filter= createGirdFilter(50, 50 )
+    #plt.imshow(filter, interpolation="nearest")
+    #plt.show()
+    A = (-1, -2)
+    B = (-1, 1)
+    C = (0, 0)
+    D = (1, -1)
+    E = (1, 1)
+
+
+    print getPentWeigth(A, B, C, D, E)
+
+    getLinerInterpolate(A,D,C,direction='y')
     return "Nothing to do!"
 
 

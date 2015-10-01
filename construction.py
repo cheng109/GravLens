@@ -2,26 +2,31 @@ __author__ = 'cheng109'
 
 import numpy as np
 import commons
+import scipy.sparse
+import scipy.sparse.linalg
 ## construction for source image vector
 
 
 
-def getLensOperator(mappingDict):
+def getLensOperator(mappingDict, srcBrightNess):
     dim = len(mappingDict)
     L = np.zeros((dim, dim))
     imgPointList = mappingDict.keys()
     srcPointList = mappingDict.values()
     srcPosition = []
-    indexWeightList = []
-
+    firstOrderWeightList = []
+    secondOrderWeightList = []
+    Hsy1 = np.zeros((dim, dim))
+    Hsy2 = np.zeros((dim, dim))
     d =  np.zeros(dim)
 
     normV = [[] for i in range(dim)]
 
-    srcBrightNess = np.ones(dim)
+    #srcBrightNess = np.ones(dim)
     varList = []
-    #sXDev = np.zeros(dim)
-    #sYDev = np.zeros(dim)
+
+    RTR = np.zeros((2*dim, 2*dim))
+
     for i in range(dim):
         imgX, imgY = imgPointList[i]
         srcX, srcY, imgBrightNess, type, var = srcPointList[i]
@@ -29,34 +34,70 @@ def getLensOperator(mappingDict):
         varList.append(var)
         d[i] = imgBrightNess
 
-        if type=='o' and (imgX, imgY-1) in imgPointList and (imgX, imgY+1) in imgPointList and (imgX+1, imgY) in imgPointList:
+        if type=='o':
+            if (imgX, imgY-1) in imgPointList and (imgX, imgY+1) in imgPointList and (imgX+1, imgY) in imgPointList:
+                Hsy1[i][i]=1
+                Hsy2[i][i]=1
+                w1Index = imgPointList.index((imgX, imgY-1))
+                w2Index = imgPointList.index((imgX, imgY+1))
+                w3Index = imgPointList.index((imgX+1, imgY))
+                A = (mappingDict[(imgX,imgY-1)][0], mappingDict[(imgX,imgY-1)][1])
+                B = (mappingDict[(imgX,imgY+1)][0], mappingDict[(imgX,imgY+1)][1])
+                C = (mappingDict[(imgX+1,imgY)][0], mappingDict[(imgX+1,imgY)][1])
 
-            w1Index = imgPointList.index((imgX, imgY-1))
-            w2Index = imgPointList.index((imgX, imgY+1))
-            w3Index = imgPointList.index((imgX+1, imgY))
-            A = (mappingDict[(imgX,imgY-1)][0], mappingDict[(imgX,imgY-1)][1])
-            B = (mappingDict[(imgX,imgY+1)][0], mappingDict[(imgX,imgY+1)][1])
-            C = (mappingDict[(imgX+1,imgY)][0], mappingDict[(imgX+1,imgY)][1])
-
-            L[i][w1Index], L[i][w2Index],L[i][w3Index] = commons.getTriWeight(A,B,C, (srcX, srcY))
+                L[i][w1Index], L[i][w2Index],L[i][w3Index] = commons.getTriWeight(A,B,C, (srcX, srcY))
             # update the normV
-            An = (A[0], A[1], srcBrightNess[w1Index])
-            Bn = (B[0], B[1], srcBrightNess[w2Index])
-            Cn = (C[0], C[1], srcBrightNess[w3Index])
+                An = (A[0], A[1], srcBrightNess[w1Index])
+                Bn = (B[0], B[1], srcBrightNess[w2Index])
+                Cn = (C[0], C[1], srcBrightNess[w3Index])
 
-            n0, n1, n2 = commons.getNormVectors(An, Bn, Cn)
-            normV[w1Index].append((n0, n1, n2))
-            normV[w2Index].append((n0, n1, n2))
-            normV[w3Index].append((n0, n1, n2))
-            indexWeightList.append((w1Index, w2Index, w3Index, L[i][w1Index], L[i][w2Index],L[i][w3Index]))
-        else:
+                n0, n1, n2 = commons.getNormVectors(An, Bn, Cn)
+                normV[w1Index].append((n0, n1, n2))
+                normV[w2Index].append((n0, n1, n2))
+                normV[w3Index].append((n0, n1, n2))
+                firstOrderWeightList.append((w1Index, w2Index, w3Index, L[i][w1Index], L[i][w2Index],L[i][w3Index]))
+            else:
+                L[i][i] =1
+                firstOrderWeightList.append((i, i, i , 1/3.,1/3.,1/3.))
+
+
+        if type=='v':
             L[i][i] =1
-            indexWeightList.append((i, i, i , 1/3.0,1/3.0,1/3.0))
+            firstOrderWeightList.append((i, i, i , 1/3.,1/3.,1/3.))
+            if (imgX-1, imgY-1) in imgPointList and (imgX-1, imgY+1) in imgPointList and (imgX+1, imgY-1) in imgPointList and (imgX+1, imgY+1) in imgPointList:
+                wAIndex = imgPointList.index((imgX-1, imgY-1))
+                wBIndex = imgPointList.index((imgX-1, imgY+1))
+                wCIndex = imgPointList.index((imgX+0, imgY+0))
+                wDIndex = imgPointList.index((imgX+1, imgY-1))
+                wEIndex = imgPointList.index((imgX+1, imgY+1))
+
+
+                A = (mappingDict[(imgX-1,imgY-1)][0], mappingDict[(imgX-1,imgY-1)][1])
+                B = (mappingDict[(imgX-1,imgY+1)][0], mappingDict[(imgX-1,imgY+1)][1])
+                C = (mappingDict[(imgX+0,imgY+0)][0], mappingDict[(imgX+0,imgY+0)][1])
+                D = (mappingDict[(imgX+1,imgY-1)][0], mappingDict[(imgX+1,imgY-1)][1])
+                E = (mappingDict[(imgX+1,imgY+1)][0], mappingDict[(imgX+1,imgY+1)][1])
+                Hsy1[i][wAIndex], Hsy1[i][wBIndex], Hsy1[i][wCIndex], Hsy1[i][wDIndex],Hsy1[i][wEIndex],\
+                Hsy2[i][wAIndex], Hsy2[i][wBIndex], Hsy2[i][wCIndex], Hsy2[i][wDIndex],Hsy2[i][wEIndex] = commons.getPentWeigth(A, B, C, D, E)
+
+
+    HsTHs = scipy.sparse.coo_matrix(Hsy1.transpose())*scipy.sparse.coo_matrix(Hsy1) + \
+                    scipy.sparse.coo_matrix(Hsy2.transpose())*scipy.sparse.coo_matrix(Hsy2)
+
+    HsTHs = HsTHs.toarray()
+    #Hs = np.linalg.cholesky(tt)
+
+
+    for i in range(dim):
+        for j in range(dim):
+            RTR[i][j] = HsTHs[i][j]
+
+
         # Diagonal covariance matrix:
     C = commons.listToDiagonalMatrix(varList)
     normV = commons.getMeanNorm(normV)
 
-    return srcPosition, srcPointList, L, normV, C, indexWeightList, d
+    return srcPosition, srcPointList, L, normV, C, firstOrderWeightList, d, RTR, HsTHs
 
 
 
@@ -82,14 +123,34 @@ def getPenalty(M, r, d, Hs, s, Hphi,phi, lambdaS, lambdaPhi):
     chiSquare = np.transpose(residual)*np.linalg.inv(C)*residual
     regSource = lambdaS**2*np.linalg.norm(np.outer(Hs, s))**2
     regPot    = lambdaPhi**2*np.linalg.norm(np.outer(Hphi,phi))**2
-    return chiSquare+regSource+regPot
+    penalty = chiSquare+regSource+regPot
+    return penalty
+
+
+
+
+def getChiSquare(M, r, d, C):
+
+    M = scipy.sparse.coo_matrix(M)
+
+    r = np.reshape(r, (1,2468))
+    d = np.reshape(d, (1,1234))
+    r = scipy.sparse.coo_matrix(np.transpose(r))
+    d = scipy.sparse.coo_matrix(np.transpose(d))
+
+
+    #r = scipy.sparse.linalg.spsolve(M, d)
+    residual = M*r-d
+
+    chiSquare = np.transpose(residual)*scipy.sparse.linalg.inv(C)*residual
+    return chiSquare
 
 def getMatrixDs(normV,indexWeightList, const):
     # Assume the source vector 's' is sorted
-    xdim =len(indexWeightList)
+    xdim =const.length
     ydim = 2*xdim
     DsMatrix = np.zeros((xdim, ydim))
-    print len(indexWeightList)
+
     for i in range(len(indexWeightList)):
 
         indexA, indexB, indexC, wA, wB, wC = indexWeightList[i]
@@ -112,16 +173,36 @@ def getMatrixDs(normV,indexWeightList, const):
         DsMatrix[i][2*i+1]  = dSp_y2
     return DsMatrix
 
-def getMatrixDphi(dPhiGrid, potPosition, D, const):
-    xdim, ydim = const.potSize
-    DphiMatrix = np.zeros((2*xdim, ydim))
-    #dPhiGrid.reshape((xdim, ydim))
-    for i in range(xdim):
-        for j in range(ydim-1):
-            col = i*ydim+j
-            DphiMatrix[2*col][col] = (dPhiGrid[i][j+1]-dPhiGrid[i][j])/const.potRes
-            DphiMatrix[2*col+1][col] = (dPhiGrid[i+1][j]-dPhiGrid[i][j])/const.potRes
+# def getMatrixDphi(dPhiGrid, potPosition, D, const):
+#     xdim, ydim = const.potSize
+#     DphiMatrix = np.zeros((2*xdim, ydim))
+#     #dPhiGrid.reshape((xdim, ydim))
+#     for i in range(xdim):
+#         for j in range(ydim-1):
+#             col = i*ydim+j
+#             DphiMatrix[2*col][col] = (dPhiGrid[i][j+1]-dPhiGrid[i][j])/const.potRes
+#             DphiMatrix[2*col+1][col] = (dPhiGrid[i+1][j]-dPhiGrid[i][j])/const.potRes
+#     return DphiMatrix
+
+def getMatrixDphi(const):
+
+    ydim =  const.length
+
+    DphiMatrix = np.zeros((2*ydim, ydim))
+    for col in range(ydim-1):
+        DphiMatrix[2*col][col] = -1
+        DphiMatrix[2*col+1][col] = -1
     return DphiMatrix
+
+
+
+def getMatrixH(const):
+    ydim = const.length
+    HsMatrix = np.zeros((ydim,ydim))
+
+
+
+    return HsMatrix
 
 def main():
     return

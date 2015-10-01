@@ -4,7 +4,7 @@ from fastell4py import fastell4py
 import math
 import models
 
-def getDeflection(imgX, imgY, model,const):
+def getDeflection(imgX, imgY, model, critRad, const):
     imgX = (imgX-const.imgXCenter)*const.imgRes
     imgY = (imgY-const.imgYCenter)*const.imgRes
 
@@ -27,7 +27,8 @@ def getDeflection(imgX, imgY, model,const):
         core=0.001
         x1 = imgX
         y1 = imgY
-        LM_SIE = models.SIE(critRad=1.25,axisRatio=1, pa=0, centerX=0, centerY=0)
+        #critRad = 1.25
+        LM_SIE = models.SIE(critRad=critRad,axisRatio=1, pa=0, centerX=0, centerY=0)
         q = LM_SIE.axisRatio
         if q==1:
             q=0.999
