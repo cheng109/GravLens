@@ -51,13 +51,22 @@ def filterImage(maskFileName, imageFileName, filterType):
                     type = 'o'
                 imgList.append((i,j, imgData[i][j], type))
 
-    filterMatrix = np.zeros((xlim*ylim,len(imgList)))
+    return imgList
+
+def getFilterMatrix(imgList, const):
+    xlim,ylim = const.imgSize
+    filter_1 = np.zeros((xlim*ylim,len(imgList)))
+    filter_2 = np.zeros((len(imgList),xlim*ylim))
+
     for k in range(len(imgList)):
         i, j, _, _ = imgList[k]
-        filterMatrix[i*ylim+j][k] = 1
+        filter_1[i*ylim+j][k] = 1
 
+    for k in range(len(imgList)):
+        i, j, _, _ = imgList[k]
+        filter_2[k][i*ylim+j] = 1
 
-    return imgList, sMatrix(filterMatrix)
+    return filter_1, filter_2
 
 def writeMaskFile(maskData, outputName):
     xlim, ylim = maskData.shape

@@ -34,16 +34,18 @@ def prepare():
     varFileName =  dir + 'jun_var.fits'
     psfFileName =  dir + 'jun_psf.fits'
 
-    maskFilterType = 'NONE'
+    maskFilterType = 'REG'
 
-    imgList, filterMatrix = commons.filterImage(maskFileName=maskFileName,imageFileName=imgFileName, filterType=maskFilterType)
-    varList, filterMatrix = commons.filterImage(maskFileName=maskFileName,imageFileName=varFileName, filterType=maskFilterType)
+    imgList = commons.filterImage(maskFileName=maskFileName,imageFileName=imgFileName, filterType=maskFilterType)
+    varList = commons.filterImage(maskFileName=maskFileName,imageFileName=varFileName, filterType=maskFilterType)
+
+
     imgSize = (53,53)
     const = commons.Constants(srcSize=imgSize,imgSize=imgSize, potSize=imgSize,srcRes=0.3, imgRes=0.3, potRes=0.3, length=len(imgList))
-
+    filter1, filter2 = commons.getFilterMatrix(imgList, const)
     s = np.zeros(len(imgList))
     phi = np.zeros(len(imgList))
-    B = construction.getPSFMatrix(psfFileName, filterMatrix, const)
+    B = construction.getPSFMatrix(psfFileName, filter1, filter2, const)
     lambdaS = 3
 
 
@@ -55,7 +57,7 @@ def procedure():
 
     s, B, const,  imgList, varList, phi, lambdaS = prepare()
 
-    print B.shape
+    #print B.shape
     critRad = 6.1
     mappingDict = getMappingDict(imgList,varList, model='PTMASS', critRad = critRad, const=const)
 
@@ -88,7 +90,7 @@ def procedure():
         srcPosition, srcPointList, L, normV, C, indexWeightList, d, RTR , HsTHs= construction.getLensOperator(mappingDict, s)
 
 
-        chi2 = construction.getChiSquare(M = L, r = r, d =d,  C=C, const=const).toarray()[0][0]
+        chi2 = construction.getChiSquare(M = B*L, r = r, d =d,  C=C, const=const).toarray()[0][0]
         print  critRad,  chi2
         index.append(critRad)
         chi2List.append(chi2)
