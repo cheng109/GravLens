@@ -26,11 +26,6 @@ class SIE:
 
 
 
-class PTMASS:
-    def __init__(self, critRad):
-        self.critRad = critRad
-
-
 
 
 def main():

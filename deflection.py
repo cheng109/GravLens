@@ -1,12 +1,30 @@
 __author__ = 'juncheng'
 import commons
+import numpy as np
 from fastell4py import fastell4py
 import math
 import models
 
 def getDeflection(imgX, imgY, model, critRad, const):
-    imgX = (imgX-const.imgXCenter)*const.imgRes
-    imgY = (imgY-const.imgYCenter)*const.imgRes
+    fX = (imgX-const.imgXCenter)*const.imgRes
+    fY = (imgY-const.imgYCenter)*const.imgRes
+
+
+
+    if model=='PTMASS':
+        centerX = 0
+        centerY = 0
+
+
+        fDenom = fX**2+fY**2
+        fMult = critRad**2/fDenom
+
+        deflx = fX*fMult
+        defly = fY*fMult
+        pdeflx = deflx
+        pdefly = defly
+
+
 
     if model=='SPEMD':
         critRad = 1.20347*10
@@ -42,9 +60,10 @@ def getDeflection(imgX, imgY, model, critRad, const):
         pdefly = defly
 
 
-    srcX = (imgX - pdeflx)/const.srcRes+const.srcXCenter
-    srcY = (imgY - pdefly)/const.srcRes+const.srcYCenter
-    return deflx, defly, srcX, srcY
+    srcX = (fX - pdeflx)/const.srcRes+const.srcXCenter
+    srcY = (fY - pdefly)/const.srcRes+const.srcYCenter
+
+    return  deflx, defly, srcX, srcY
 
 
 

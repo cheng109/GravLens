@@ -6,6 +6,6 @@ int main() {
 	
 	
 	cout<<"hello world" << endl;
-	int status = test();
+	readimage();
 
 }

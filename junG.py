@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 #from scipy.sparse import linalg
 from scipy import linalg
 from scipy.sparse import lil_matrix
-
+from numpy.linalg import norm
 
 def getMappingDict(imgList,varList, model, critRad , const):
     mappingDict = {}
@@ -26,135 +26,123 @@ def getMappingDict(imgList,varList, model, critRad , const):
 
 def prepare():
 
-    maskFileName = 'test_images/mask.fits'
-    imgFileName = 'test_images/image.fits.gz'
-    varFileName = 'test_images/var.fits.gz'
-    psfFileName = 'test_images/psf.fits.gz'
+    dir = 'example/'
 
+    maskFileName = dir + 'mask.reg'
+    #maskFileName = dir + 'mask.fits'
+    imgFileName =  dir + 'jun_image.fits'
+    varFileName =  dir + 'jun_var.fits'
+    psfFileName =  dir + 'jun_psf.fits'
 
-    imgList = commons.filterImage(maskFileName=maskFileName,imageFileName=imgFileName, filterType="FITS")
-    varList = commons.filterImage(maskFileName=maskFileName,imageFileName=varFileName, filterType="FITS")
+    maskFilterType = 'NONE'
 
-    const = commons.Constants(srcSize=(80,80),imgSize=(122,122), potSize=(122,122),srcRes=0.02, imgRes=0.05, potRes=0.05, length=len(imgList))
+    imgList, filterMatrix = commons.filterImage(maskFileName=maskFileName,imageFileName=imgFileName, filterType=maskFilterType)
+    varList, filterMatrix = commons.filterImage(maskFileName=maskFileName,imageFileName=varFileName, filterType=maskFilterType)
+    imgSize = (53,53)
+    const = commons.Constants(srcSize=imgSize,imgSize=imgSize, potSize=imgSize,srcRes=0.3, imgRes=0.3, potRes=0.3, length=len(imgList))
 
     s = np.zeros(len(imgList))
     phi = np.zeros(len(imgList))
-    B = construction.getPSFMatrix(psfFileName, const)
+    B = construction.getPSFMatrix(psfFileName, filterMatrix, const)
+    lambdaS = 3
 
-    return s, B, const,  imgList, varList, phi
+
+    return s, B, const,  imgList, varList, phi, lambdaS
 
 
 def procedure():
     # initialization:
 
-    s, B, const,  imgList, varList, phi = prepare()
+    s, B, const,  imgList, varList, phi, lambdaS = prepare()
 
+    print B.shape
+    critRad = 6.1
+    mappingDict = getMappingDict(imgList,varList, model='PTMASS', critRad = critRad, const=const)
 
-    chi2List = []
-    # critRadRange = np.arange(0.5, 2.0, 0.02)
-    # index = []
-    # i = 0
-    # for critRad in critRadRange:
-    #     i = i+1
-    #     mappingDict = getMappingDict(imgList,varList, model='SIE', critRad = critRad, const=const)
-    #     srcPosition, srcPointList, L, normV, C, indexWeightList, d, RTR = construction.getLensOperator(mappingDict)
+    imgPointList = mappingDict.keys()
+    srcPointList = mappingDict.values()
+    dim = len(imgPointList)
+    srcPosition = []
+    s = []
+    r = np.zeros((1, 2*dim))
+    for i in range(dim):
+        x,y, bri, _, _ = srcPointList[i]
+
+        srcPosition.append((x,y))
+        s.append(bri)
+        r[0][i] = bri
+
+    # srcMap = commons.pixelizeSource(srcPosition, s, const)
     #
-    #
-    #     chi2 = construction.getChiSquare(M = L, r = d, d =d,  C=C)
-    #     print  critRad, chi2.shape, chi2[0][0]
-    #     index.append(critRad)
-    #     chi2List.append(chi2[0][0])
-    #
-    # plt.plot(index, chi2List, '*-')
+    # plt.imshow(srcMap, origin="lower", interpolation="nearest")
+    # plt.colorbar()
     # plt.show()
 
-    critRadRange = np.arange(1.3, 4.0, 0.1)
-
-    for i in range(1):
-        mappingDict = getMappingDict(imgList,varList, model='SIE', critRad = 3.0, const=const)
-        srcPosition, srcPointList, L, normV, C, indexWeightList, d, RTR, HsTHs = construction.getLensOperator(mappingDict, s)
-        Ds = construction.getMatrixDs(normV,indexWeightList, const)
-        Dphi =construction.getMatrixDphi(const)
-
-
-        D = scipy.sparse.coo_matrix(Ds)*scipy.sparse.coo_matrix(Dphi)
+    chi2List = []
+    critRadRange = np.arange(5.6, 6.6, 0.02)
+    index = []
+    i = 0
+    for critRad in critRadRange:
+        i = i+1
+        mappingDict = getMappingDict(imgList,varList, model='SIE', critRad = critRad, const=const)
+        srcPosition, srcPointList, L, normV, C, indexWeightList, d, RTR , HsTHs= construction.getLensOperator(mappingDict, s)
 
 
-        M =scipy.sparse.hstack([L,D])
+        chi2 = construction.getChiSquare(M = L, r = r, d =d,  C=C, const=const).toarray()[0][0]
+        print  critRad,  chi2
+        index.append(critRad)
+        chi2List.append(chi2)
 
-        r = np.zeros(2*const.length)
-        for i in range(const.length):
-            r[i] = s[i]
+    plt.plot(index, chi2List, '*-')
+    plt.xlabel("Critical Radius")
+    plt.ylabel("Chi2")
+    plt.show()
 
+    #critRadRange = np.arange(1.3, 4.0, 0.1)
 
-        r =scipy.sparse.vstack(r)
-        M_t = scipy.sparse.coo_matrix.transpose(M)
-
-        C = scipy.sparse.coo_matrix(C)
-        RTR = scipy.sparse.coo_matrix(RTR)
-
-        C_inv = scipy.sparse.linalg.inv(C)
-        b = M_t*C_inv*d
-
-        A = M_t*C_inv*M+RTR
-        r = scipy.sparse.linalg.spsolve(A, b)
-
-        s = np.zeros((const.length,1))
-        for i in range(const.length):
-            s[i][0] = r[i]
-        s_t = scipy.sparse.coo_matrix.transpose(scipy.sparse.coo_matrix(s))
-        chi2 = construction.getChiSquare(M = M, r = r, d =d,  C=C)
-        G = chi2 + s_t*scipy.sparse.coo_matrix(HsTHs)*s
-        print i, chi2, G
+    # for i in range(1):
+    #     mappingDict = getMappingDict(imgList,varList, model='SIE', critRad = 3.0, const=const)
+    #     srcPosition, srcPointList, L, normV, C, indexWeightList, d, RTR, HsTHs = construction.getLensOperator(mappingDict, s)
+    #     Ds = construction.getMatrixDs(normV,indexWeightList, const)
+    #     Dphi =construction.getMatrixDphi(const)
+    #
+    #
+    #     D = scipy.sparse.coo_matrix(Ds)*scipy.sparse.coo_matrix(Dphi)
+    #
+    #
+    #     M =scipy.sparse.hstack([L,D])
+    #
+    #     r = np.zeros(2*const.length)
+    #     for i in range(const.length):
+    #         r[i] = s[i]
+    #
+    #
+    #     r =scipy.sparse.vstack(r)
+    #     M_t = scipy.sparse.coo_matrix.transpose(M)
+    #
+    #     C = scipy.sparse.coo_matrix(C)
+    #     RTR = scipy.sparse.coo_matrix(RTR)
+    #
+    #     C_inv = scipy.sparse.linalg.inv(C)
+    #     b = M_t*C_inv*d
+    #
+    #     A = M_t*C_inv*M+RTR
+    #     r = scipy.sparse.linalg.spsolve(A, b)
+    #
+    #     s = np.zeros((const.length,1))
+    #     for i in range(const.length):
+    #         s[i][0] = r[i]
+    #     s_t = scipy.sparse.coo_matrix.transpose(scipy.sparse.coo_matrix(s))
+    #     chi2 = construction.getChiSquare(M = M, r = r, d =d,  C=C)
+    #     G = chi2 + s_t*scipy.sparse.coo_matrix(HsTHs)*s
+    #     print i, chi2, G
     # srcMap = commons.pixelizeSource(srcPosition, s, const)
     # print srcMap
     # commons.writeFitsImage(srcMap, "model_test.fits")
     # plt.imshow(srcMap, origin="lower", interpolation="nearest")
     # plt.show()
 
-    s_stable =s
-    critList = []
-    GList = []
-    for critRad in critRadRange:
-        s = s_stable
-        mappingDict = getMappingDict(imgList,varList, model='SIE', critRad = critRad, const=const)
-        srcPosition, srcPointList, L, normV, C, indexWeightList, d, RTR, HsTHs = construction.getLensOperator(mappingDict, s)
-        Ds = construction.getMatrixDs(normV,indexWeightList, const)
-        Dphi =construction.getMatrixDphi(const)
 
-
-        D = scipy.sparse.coo_matrix(Ds)*scipy.sparse.coo_matrix(Dphi)
-
-
-        M =scipy.sparse.hstack([L,D])
-
-        r = np.zeros(2*const.length)
-        for i in range(const.length):
-            r[i] = s[i]
-
-
-        r =scipy.sparse.vstack(r)
-        M_t = scipy.sparse.coo_matrix.transpose(M)
-
-        C = scipy.sparse.coo_matrix(C)
-        RTR = scipy.sparse.coo_matrix(RTR)
-
-        C_inv = scipy.sparse.linalg.inv(C)
-        b = M_t*C_inv*d
-
-        A = M_t*C_inv*M+RTR
-        r = scipy.sparse.linalg.spsolve(A, b)
-
-        s = np.zeros((const.length,1))
-        for i in range(const.length):
-            s[i][0] = r[i]
-        s_t = scipy.sparse.coo_matrix.transpose(scipy.sparse.coo_matrix(s))
-        chi2 = construction.getChiSquare(M = M, r = r, d =d,  C=C)
-        G = chi2 + s_t*scipy.sparse.coo_matrix(HsTHs)*s
-        print critRad, chi2[0][0], G[0][0]
-        critList.append(critRad)
-        GList.append(G[0][0])
-    plt.plot(critList, GList, '*-')
 
     return
 

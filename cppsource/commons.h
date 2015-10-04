@@ -9,9 +9,9 @@
 #define COMMONS_H_
 
 
-int test();
 
-
+void readimage(void);
+void printerror(int status );
 
 
 #endif /* COMMONS_H_ */

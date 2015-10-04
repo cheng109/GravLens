@@ -51,7 +51,7 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<fileInfo id="cdt.managedbuild.config.gnu.macosx.exe.debug.2141082606.1395234351" name="commons.cpp" rcbsApplicability="disable" resourcePath="commons.c" toolsToInvoke="cdt.managedbuild.tool.gnu.cpp.compiler.macosx.exe.debug.691784090.169931007">
+					<fileInfo id="cdt.managedbuild.config.gnu.macosx.exe.debug.2141082606.1395234351" name="commons.cpp" rcbsApplicability="disable" resourcePath="commons.cpp" toolsToInvoke="cdt.managedbuild.tool.gnu.cpp.compiler.macosx.exe.debug.691784090.169931007">
 						<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.macosx.exe.debug.691784090.169931007" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.macosx.exe.debug.691784090">
 							<option id="gnu.cpp.compiler.option.include.paths.179158064" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 								<listOptionValue builtIn="false" value="/opt/local/include"/>

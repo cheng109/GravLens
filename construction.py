@@ -8,9 +8,11 @@ import scipy.sparse.linalg
 
 
 
+
+
 def getLensOperator(mappingDict, srcBrightNess):
     dim = len(mappingDict)
-    L = np.zeros((dim, dim))
+    L = np.zeros((dim, 2*dim))
     imgPointList = mappingDict.keys()
     srcPointList = mappingDict.values()
     srcPosition = []
@@ -101,19 +103,23 @@ def getLensOperator(mappingDict, srcBrightNess):
 
 
 
-def getPSFMatrix(psfFileName, const):
+def getPSFMatrix(psfFileName,filterMatrix,const):
     psfMatrix, _= commons.readFitsImage(psfFileName)
     normalizedPSF = psfMatrix/np.sum(psfMatrix)
     M, N  = const.imgSize
-    B = np.zeros((M*N, M*N))
+    fullB = np.zeros((M*N, M*N))
     xlim, ylim = normalizedPSF.shape
 
+    #B = np.zeros((const.length, const.length))
     for u in range(xlim):
         for v in range(ylim):
             for h in range(M*N):
                 if h+u>=0 and h+u<=M-1 and h+v>=0 and h+v<=N-1:
                     g=(h+u)+(h+v-1)*(M-1)
-                    B[g][h]=normalizedPSF[u][v]
+                    fullB[g][h]=normalizedPSF[u][v]
+
+
+    B = commons.sMatrix(fullB)*filterMatrix
     return B
 
 
@@ -129,20 +135,20 @@ def getPenalty(M, r, d, Hs, s, Hphi,phi, lambdaS, lambdaPhi):
 
 
 
-def getChiSquare(M, r, d, C):
+def getChiSquare(M, r, d, C, const):
 
     M = scipy.sparse.coo_matrix(M)
 
-    r = np.reshape(r, (1,2468))
-    d = np.reshape(d, (1,1234))
+    r = np.reshape(r, (1,2*const.length))
+    d = np.reshape(d, (1,const.length))
     r = scipy.sparse.coo_matrix(np.transpose(r))
     d = scipy.sparse.coo_matrix(np.transpose(d))
-
+    C = scipy.sparse.coo_matrix(C)
 
     #r = scipy.sparse.linalg.spsolve(M, d)
-    residual = M*r-d
-
-    chiSquare = np.transpose(residual)*scipy.sparse.linalg.inv(C)*residual
+    res = M*r-d
+    resT = res.transpose()
+    chiSquare = resT*scipy.sparse.linalg.inv(C)*res
     return chiSquare
 
 def getMatrixDs(normV,indexWeightList, const):

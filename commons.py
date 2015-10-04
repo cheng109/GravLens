@@ -3,7 +3,9 @@ from astropy.io import fits
 from fastell4py import fastell4py
 import numpy as np
 import matplotlib.pyplot as plt
+import pyfits
 import pyregion
+import scipy.sparse
 
 class Constants():
     def __init__(self, srcSize, imgSize,potSize, srcRes, imgRes, potRes, length):
@@ -20,16 +22,26 @@ class Constants():
         self.length = length
 
 
+def sMatrix(m):
+    return scipy.sparse.coo_matrix(m)
+
 def filterImage(maskFileName, imageFileName, filterType):
     imgList = []
     imgData, _ = readFitsImage(imageFileName)
+    xlim, ylim = imgData.shape
     if filterType=="REG":
+        reg = open(maskFileName, 'r').read()
+
         hdulist = pyfits.open(imageFileName)
-        maskData = pyfits.parse(reg).get_mask(hdu=hdulist[0])
+        maskData = pyregion.parse(reg).get_mask(hdu=hdulist[0])
+        maskData = writeMaskFile(maskData, 'mask.fits')
     if filterType=="FITS":
         maskData, _= readFitsImage(maskFileName)
         assert (maskData.shape==imgData.shape), "Mask shape does not match image shape!"
-    xlim, ylim = imgData.shape
+
+    if filterType=="NONE":
+        maskData = np.ones((xlim, ylim))
+
     for i in range(xlim):
         for j in range(ylim):
             if maskData[i][j]!=0:
@@ -38,7 +50,26 @@ def filterImage(maskFileName, imageFileName, filterType):
                 else:
                     type = 'o'
                 imgList.append((i,j, imgData[i][j], type))
-    return imgList
+
+    filterMatrix = np.zeros((xlim*ylim,len(imgList)))
+    for k in range(len(imgList)):
+        i, j, _, _ = imgList[k]
+        filterMatrix[i*ylim+j][k] = 1
+
+
+    return imgList, sMatrix(filterMatrix)
+
+def writeMaskFile(maskData, outputName):
+    xlim, ylim = maskData.shape
+    mask = np.zeros((xlim, ylim))
+    for i in range(xlim):
+        for j in range(ylim):
+            if maskData[i][j]==True:
+                mask[i][j] =1
+            #else:
+            #[i][j] = 0
+    writeFitsImage(mask, outputName)
+    return mask
 
 def readFitsImage(imageName):
     hdulist = fits.open(imageName)
@@ -90,7 +121,7 @@ def pixelizeSource(srcPosition, srcBrightNess , const):
     srcMap = np.zeros(const.srcSize)
     for i in range(len(srcPosition)):
         x, y = srcPosition[i]
-        if x<const.srcSize[0]-1 and y<const.srcSize[1]-1:
+        if x>0 and x<const.srcSize[0]-1 and y>0 and  y<const.srcSize[1]-1:
             srcMap[int(x)][int(y)] +=  srcBrightNess[i]
     # return a pixelized source map.
     return srcMap
@@ -194,9 +225,6 @@ def plotMappingDict(mappingDict,const):
     imgPointList = mappingDict.keys()
     srcPointList = mappingDict.values()
 
-
-
-
     for i in range(len(imgPointList)):
         imgX, imgY = imgPointList[i]
         srcX, srcY, _ , type, _ = srcPointList[i]
@@ -211,7 +239,7 @@ def plotMappingDict(mappingDict,const):
             if (imgPointList[i][0]==imgPointList[j][0] and abs(imgPointList[i][1]-imgPointList[j][1])==1) or (imgPointList[i][1]==imgPointList[j][1] and abs(imgPointList[i][0]-imgPointList[j][0])==1):
                 #ax1.plot((srcPointList[i][0], srcPointList[j][0]),(srcPointList[i][1], srcPointList[j][1]) , 'b-')
                 ax2.plot((imgPointList[i][0], imgPointList[j][0]),(imgPointList[i][1], imgPointList[j][1]) , 'b-')
-        # plot the 'vertex' and 'ohters'
+        #plot the 'vertex' and 'ohters'
         if type=='v':
             ax2.plot(imgX, imgY, 'ro')
             ax1.plot(srcX, srcY, 'ro')
@@ -221,6 +249,9 @@ def plotMappingDict(mappingDict,const):
 
     ax1.set_title('Source plane')
     ax2.set_title('Image plane')
+
+    ax1.set_xlim([0, const.srcSize[0]])
+    ax1.set_ylim([0, const.srcSize[1]])
 
     plt.show()
 
