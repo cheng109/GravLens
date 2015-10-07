@@ -11,13 +11,14 @@ import matplotlib.pyplot as plt
 from scipy import linalg
 from scipy.sparse import lil_matrix
 from numpy.linalg import norm
+import models
 
-def getMappingDict(imgList,varList, model, critRad , const):
+def getMappingDict(imgList,varList, MODEL , const):
     mappingDict = {}
 
     for index in range(len(imgList)):
         i, j, imgBrightNess, type = imgList[index]
-        _, _, srcX, srcY = deflection.getDeflection(i, j, model=model, critRad = critRad,const=const)
+        _, _, srcX, srcY = deflection.getDeflection(i+0.5, j+0.5, MODEL, const=const)
         mappingDict[(i,j)]= (srcX, srcY, imgBrightNess, type, varList[index][2])
     #commons.plotMappingDict(mappingDict, const)
 
@@ -28,8 +29,7 @@ def prepare():
 
     dir = 'example/'
 
-    maskFileName = dir + 'mask.reg'
-    #maskFileName = dir + 'mask.fits'
+    maskFileName = dir + 'mask_2.reg'
     imgFileName =  dir + 'jun_image.fits'
     varFileName =  dir + 'jun_var.fits'
     psfFileName =  dir + 'jun_psf.fits'
@@ -40,12 +40,13 @@ def prepare():
     varList = commons.filterImage(maskFileName=maskFileName,imageFileName=varFileName, filterType=maskFilterType)
 
 
-    imgSize = (53,53)
+
+    imgSize = commons.getImageSize(imgFileName)
+
     const = commons.Constants(srcSize=imgSize,imgSize=imgSize, potSize=imgSize,srcRes=0.3, imgRes=0.3, potRes=0.3, length=len(imgList))
-    filter1, filter2 = commons.getFilterMatrix(imgList, const)
     s = np.zeros(len(imgList))
     phi = np.zeros(len(imgList))
-    B = construction.getPSFMatrix(psfFileName, filter1, filter2, const)
+    B = construction.getPSFMatrix(psfFileName, imgList, const)
     lambdaS = 3
 
 
@@ -57,9 +58,10 @@ def procedure():
 
     s, B, const,  imgList, varList, phi, lambdaS = prepare()
 
-    #print B.shape
-    critRad = 6.1
-    mappingDict = getMappingDict(imgList,varList, model='PTMASS', critRad = critRad, const=const)
+    LM_SIE = models.PTMASS(critRad=6.16, centerX=0.0, centerY=5.0)
+    #LM_SIE = models.SIE(critRad=6.16, axisRatio=0.7, pa=0.0, centerX=0.0, centerY=0.0)
+
+    mappingDict = getMappingDict(imgList,varList, LM_SIE, const=const)
 
     imgPointList = mappingDict.keys()
     srcPointList = mappingDict.values()
@@ -73,30 +75,60 @@ def procedure():
         srcPosition.append((x,y))
         s.append(bri)
         r[0][i] = bri
+    srcMap = commons.pixelizeSource(srcPosition, s, const)
 
-    # srcMap = commons.pixelizeSource(srcPosition, s, const)
-    #
-    # plt.imshow(srcMap, origin="lower", interpolation="nearest")
-    # plt.colorbar()
-    # plt.show()
 
+    commons.writeFitsImage(srcMap, "example/outputSrc.fits")
+    plt.imshow(srcMap, origin="lower", interpolation="nearest")
+    plt.colorbar()
+    plt.show()
+
+
+    #return
     chi2List = []
-    critRadRange = np.arange(5.6, 6.6, 0.02)
+    #critRadRange = np.arange(5.9, 6.3, 0.02)
+    #qRange = np.arange(0.1, 0.9, 0.05)
+    #paRange = np.arange(0, 20, 10)
+    centerYrange= np.arange(5, 15, 1)
     index = []
     i = 0
-    for critRad in critRadRange:
+    # = []
+    #for critRad in critRadRange:
+    # r = np.reshape(r, (1,2*const.length))
+    # r = scipy.sparse.coo_matrix(np.transpose(r))
+
+    for yshift in centerYrange:
+
         i = i+1
-        mappingDict = getMappingDict(imgList,varList, model='SIE', critRad = critRad, const=const)
-        srcPosition, srcPointList, L, normV, C, indexWeightList, d, RTR , HsTHs= construction.getLensOperator(mappingDict, s)
+        #LM_SIE.critRad = critRad
+        #LM_SIE.axisRatio = q
+        #LM_SIE.pa = pa
+        LM_SIE.centerY = yshift
+        mappingDict = getMappingDict(imgList,varList, MODEL = LM_SIE, const=const)
 
 
-        chi2 = construction.getChiSquare(M = B*L, r = r, d =d,  C=C, const=const).toarray()[0][0]
-        print  critRad,  chi2
-        index.append(critRad)
+        srcPosition, srcPointList, L, normV, C, indexWeightList, d, RTR , HsTHs, imgPointList= construction.getLensOperator(mappingDict, s)
+
+        chi2, res = construction.getChiSquare(M = L, r = r, d =d,  C=C, const=const)
+        chi2 = chi2.toarray()[0][0]
+        res = res.toarray()
+
+        # image = construction.buildModelImage(imgPointList, res, const)
+        # plt.imshow(image, origin="lower", interpolation="nearest")
+        # plt.colorbar()
+        # plt.show()
+        print  yshift,  chi2
+
+
+        index.append(yshift)
         chi2List.append(chi2)
 
+
+
+
+
     plt.plot(index, chi2List, '*-')
-    plt.xlabel("Critical Radius")
+    plt.xlabel("Parameter")
     plt.ylabel("Chi2")
     plt.show()
 

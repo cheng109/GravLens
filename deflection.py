@@ -5,28 +5,50 @@ from fastell4py import fastell4py
 import math
 import models
 
-def getDeflection(imgX, imgY, model, critRad, const):
-    fX = (imgX-const.imgXCenter)*const.imgRes
-    fY = (imgY-const.imgYCenter)*const.imgRes
+def getDeflection(imgX, imgY, MODEL, const):
+     # coordination center at (lensMid, lensMid)
+    fX = (imgX-const.imgXCenter-MODEL.centerX)*const.imgRes
+    fY = (imgY-const.imgYCenter-MODEL.centerY)*const.imgRes
 
+    # coordination center at (imgMid, imgMid)
+    pfX = (imgX-const.imgXCenter)*const.imgRes
+    pfY = (imgY-const.imgYCenter)*const.imgRes
 
-
-    if model=='PTMASS':
-        centerX = 0
-        centerY = 0
-
-
+    if MODEL.name=='PTMASS':
         fDenom = fX**2+fY**2
-        fMult = critRad**2/fDenom
+        fMult = MODEL.critRad**2/fDenom
 
-        deflx = fX*fMult
-        defly = fY*fMult
-        pdeflx = deflx
-        pdefly = defly
+        pDeltaX = fX*fMult
+        pDeltaY = fY*fMult
 
 
+    if MODEL.name=='SIE':
+        # rotation by angles
 
-    if model=='SPEMD':
+        fCore=0.0
+        MODEL.pa = np.radians(MODEL.pa)
+        fq = MODEL.axisRatio
+        fCosTheta = np.cos(MODEL.pa)
+        fSinTheta = np.sin(MODEL.pa)
+        if fq==1.0:
+            fq=0.999
+        x1 = fX*fCosTheta + fY*fSinTheta
+        y1 = -fX*fSinTheta + fY*fCosTheta
+
+        root1mq = math.sqrt(1.0-fq*fq)
+
+        phi = np.sqrt(fq*fq*(fCore*fCore+x1*x1)+y1*y1)   #original
+
+        fac = MODEL.critRad*np.sqrt(fq)/root1mq
+
+        deltax1 = fac*math.atan(root1mq*x1/(phi+fCore))
+        deltay1 = fac*commons.lm_arctanh(root1mq*y1/(phi+fCore*fq*fq))
+        # Rotate back
+        pDeltaX = deltax1 * fCosTheta - deltay1 * fSinTheta
+        pDeltaY = deltay1 * fCosTheta + deltax1 * fSinTheta
+
+
+    if MODEL.name=='SPEMD':
         critRad = 1.20347*10
         ellipticity = 0.177825
         arat = 1-ellipticity
@@ -40,30 +62,12 @@ def getDeflection(imgX, imgY, model, critRad, const):
         pdefly = defly
 
 
-    if model=='SIE':
-        # rotation by angles
-        core=0.001
-        x1 = imgX
-        y1 = imgY
-        #critRad = 1.25
-        LM_SIE = models.SIE(critRad=critRad,axisRatio=1, pa=0, centerX=0, centerY=0)
-        q = LM_SIE.axisRatio
-        if q==1:
-            q=0.999
-        root1mq = math.sqrt(1.0-q**2)
-        phi = math.sqrt(q**2*(core**2+x1**2)+y1**2)
-        fac = LM_SIE.critRad*math.sqrt(q)/root1mq
-        deflx = fac*math.atan(root1mq*x1/(phi+core))
-        defly = fac*commons.lm_arctanh(root1mq*y1/(phi+core*LM_SIE.axisRatio**2))
-        # Rotate back
-        pdeflx = deflx
-        pdefly = defly
+    srcX = (pfX - pDeltaX)/const.srcRes+const.srcXCenter
+    srcY = (pfY - pDeltaY)/const.srcRes+const.srcYCenter
 
 
-    srcX = (fX - pdeflx)/const.srcRes+const.srcXCenter
-    srcY = (fY - pdefly)/const.srcRes+const.srcYCenter
-
-    return  deflx, defly, srcX, srcY
+    #print "imgX= ", imgX, "imgY= ", imgY, "pfX= ", pfX, "pfY= ", pfY, "fX= ", fX, "fY= ", fY, "R= ", np.sqrt(fX**2+fY**2), "pDeltaX = ", pDeltaX, "pDeltaY =", pDeltaY, "srcX = " , srcX, "srcY = ", srcY
+    return  pDeltaX, pDeltaY, srcX, srcY
 
 
 

@@ -14,6 +14,12 @@ class SPEMD:
         self.coreRad = 0
         self.centerX=0
         self.centerY=0
+class PTMASS:
+    def __init__(self, critRad, centerX, centerY):
+        self.name ="PTMASS"
+        self.critRad = critRad
+        self.centerX = centerX
+        self.centerY = centerY
 
 class SIE:
     def __init__(self, critRad, axisRatio, pa, centerX, centerY):

@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import pyfits
 import pyregion
 import scipy.sparse
+import commons
+import math
 
 class Constants():
     def __init__(self, srcSize, imgSize,potSize, srcRes, imgRes, potRes, length):
@@ -49,24 +51,22 @@ def filterImage(maskFileName, imageFileName, filterType):
                     type = 'v'
                 else:
                     type = 'o'
-                imgList.append((i,j, imgData[i][j], type))
+                #type = 'v'
+                imgList.append((j,i, imgData[i][j], type))
 
     return imgList
 
 def getFilterMatrix(imgList, const):
     xlim,ylim = const.imgSize
-    filter_1 = np.zeros((xlim*ylim,len(imgList)))
-    filter_2 = np.zeros((len(imgList),xlim*ylim))
+    shortToLongM = np.zeros((xlim*ylim,len(imgList)))
+    longToShortM = np.zeros((len(imgList),xlim*ylim))
 
     for k in range(len(imgList)):
         i, j, _, _ = imgList[k]
-        filter_1[i*ylim+j][k] = 1
+        shortToLongM[i*ylim+j][k] = 1
+        longToShortM[k][i*ylim+j] = 1
 
-    for k in range(len(imgList)):
-        i, j, _, _ = imgList[k]
-        filter_2[k][i*ylim+j] = 1
-
-    return filter_1, filter_2
+    return commons.sMatrix(shortToLongM), commons.sMatrix(longToShortM)
 
 def writeMaskFile(maskData, outputName):
     xlim, ylim = maskData.shape
@@ -75,8 +75,6 @@ def writeMaskFile(maskData, outputName):
         for j in range(ylim):
             if maskData[i][j]==True:
                 mask[i][j] =1
-            #else:
-            #[i][j] = 0
     writeFitsImage(mask, outputName)
     return mask
 
@@ -127,11 +125,13 @@ def createGirdFilter(xlen, ylen):
     return filter
 
 def pixelizeSource(srcPosition, srcBrightNess , const):
-    srcMap = np.zeros(const.srcSize)
+
+    row, col = const.srcSize
+    srcMap = np.zeros((col, row))
     for i in range(len(srcPosition)):
         x, y = srcPosition[i]
-        if x>0 and x<const.srcSize[0]-1 and y>0 and  y<const.srcSize[1]-1:
-            srcMap[int(x)][int(y)] +=  srcBrightNess[i]
+        if y>0 and y<col-1 and x>0 and  x<row-1:
+            srcMap[int(y)][int(x)] +=  srcBrightNess[i]
     # return a pixelized source map.
     return srcMap
 
@@ -227,6 +227,63 @@ def listToDiagonalMatrix(l):
     return D
 
 
+def getAngularSizeDistance(z, H0, WM):
+    #H0 = 72                         # Hubble constant
+    #WM = 0.26                        # Omega(matter)
+    #WV =  0 #1.0 - WM - 0.4165/(H0*H0)  # Omega(vacuum) or lambda
+    #z = 0.445
+    WV = 0
+    c = 299792.458 # velocity of light in km/sec
+    DCMR = 0.0     # comoving radial distance in units of c/H0
+    h = H0/100.
+    WR = 4.165E-5/(h*h)   # includes 3 massless neutrino species, T0 = 2.72528
+    WK = 1-WM-WR-WV
+    az = 1.0/(1+1.0*z)
+
+    n=1000         # number of points in integrals
+    for i in range(n):
+        a = az+(1-az)*(i+0.5)/n
+        adot = math.sqrt(WK+(WM/a)+(WR/(a*a))+(WV*a*a))
+        DCMR = DCMR + 1./(a*adot)
+    DCMR = (1.-az)*DCMR/n
+    x = math.sqrt(abs(WK))*DCMR
+    if x > 0.1:
+        if WK > 0:
+            ratio =  0.5*(math.exp(x)-math.exp(-x))/x
+        else:
+            ratio = sin(x)/x
+    else:
+        y = x*x
+        if WK < 0: y = -y
+        ratio = 1. + y/6. + y*y/120.
+    DCMT = ratio*DCMR
+    DA = az*DCMT
+    DA_Mpc = (c/H0)*DA
+    return DA_Mpc   # in unit of Mpc
+
+
+def getCritSurfDensity(zs, zl, H0, WM):
+
+    G =  4.301e-9     # in km^2 Mpc Msun^-1 s^-2
+    c = 299792.458    # velocity of light in km/sec
+    Ds = getAngularSizeDistance(z=zs, H0 = H0, WM=WM)
+    Dd = getAngularSizeDistance(z=zl, H0 = H0, WM=WM)
+    Dds = Ds - Dd    # AngularSizeDistance in Mpc
+    critSurfDensity = c**2/(4*math.pi*G)*(Ds/(Dd*Dds))
+    print "Dd", Dd
+    print "Ds",Ds
+    print "Dds", Dds
+    print "critSurfDensity", critSurfDensity
+    return critSurfDensity
+
+def getEnisteinRadius(zl, zs, Mtot, H0, WM):
+    critSurfDensity = getCritSurfDensity(zs, zl, H0, WM)
+    Dd = getAngularSizeDistance(z=zl, H0 = H0, WM=WM)
+    R = (1.0/Dd)*math.sqrt(Mtot/(math.pi*critSurfDensity))*206265
+    return R
+
+
+
 def plotMappingDict(mappingDict,const):
    #### mappingDict={'imageGrid': srcGrid,  'imageGrid':srcGrid, .....}
     f, (ax1, ax2) = plt.subplots(1, 2) #, sharex=True, sharey=True )
@@ -275,6 +332,11 @@ def lm_arctanh(x):
         print "x should be between -1 and 1"
     return np.log(np.sqrt((1.0+x)/(1.0-x)))
 
+def getImageSize(imgFileName):
+    y, x = readFitsImage(imgFileName)[0].shape
+    return x, y
+
+
 def main():
 
     #filter= createGirdFilter(50, 50 )
@@ -285,12 +347,20 @@ def main():
     C = (0, 0)
     D = (1, -1)
     E = (1, 1)
+    zs = 2.379
+    zl = 0.4457
+    Mtot = 5.0e12
+    H0 = 69.6
+    WM = 0.26
+    #print getPentWeigth(A, B, C, D, E)
 
+    #getLinerInterpolate(A,D,C,direction='y')
+    print getEnisteinRadius(zl, zs, Mtot, H0, WM)
 
-    print getPentWeigth(A, B, C, D, E)
-
-    getLinerInterpolate(A,D,C,direction='y')
     return "Nothing to do!"
+
+
+
 
 
 if __name__=='__main__':

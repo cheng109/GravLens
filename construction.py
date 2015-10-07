@@ -6,6 +6,7 @@ import scipy.sparse
 import scipy.sparse.linalg
 ## construction for source image vector
 
+
 def getLensOperator(mappingDict, srcBrightNess):
     dim = len(mappingDict)
     L = np.zeros((dim, 2*dim))
@@ -95,11 +96,20 @@ def getLensOperator(mappingDict, srcBrightNess):
     C = commons.listToDiagonalMatrix(varList)
     normV = commons.getMeanNorm(normV)
 
-    return srcPosition, srcPointList, commons.sMatrix(L), normV, C, firstOrderWeightList, d, RTR, HsTHs
+    return srcPosition, srcPointList, commons.sMatrix(L), normV, C, firstOrderWeightList, d, RTR, HsTHs, imgPointList
+
+
+def buildModelImage(imgPositionList, imgBrightList, const):
+    image = np.zeros(const.imgSize)
+    for i in range(len(imgPositionList)):
+        x, y = imgPositionList[i]
+        image[y][x] = imgBrightList[i]
+
+    return image
 
 
 
-def getPSFMatrix(psfFileName,filterMatrix,const):
+def getPSFMatrix(psfFileName,imgList,const):
     psfMatrix, _= commons.readFitsImage(psfFileName)
     normalizedPSF = psfMatrix/np.sum(psfMatrix)
     M, N  = const.imgSize
@@ -113,9 +123,13 @@ def getPSFMatrix(psfFileName,filterMatrix,const):
                 if h+u>=0 and h+u<=M-1 and h+v>=0 and h+v<=N-1:
                     g=(h+u)+(h+v-1)*(M-1)
                     fullB[g][h]=normalizedPSF[u][v]
+    fullB = commons.sMatrix(fullB)
 
-
-    B = commons.sMatrix(fullB)*filterMatrix
+    shortTolongM, longToShortM = commons.getFilterMatrix(imgList, const)
+    B = longToShortM*fullB*shortTolongM
+    #print longToShortM.todense()
+    #print scipy.linalg.norm((longToShortM*fullB*shortTolongM).todense())
+    #print shortTolongM.todense()
     return B
 
 
@@ -133,7 +147,7 @@ def getPenalty(M, r, d, Hs, s, Hphi,phi, lambdaS, lambdaPhi):
 
 def getChiSquare(M, r, d, C, const):
 
-    #M = scipy.sparse.coo_matrix(M)
+    M = scipy.sparse.coo_matrix(M)
 
     r = np.reshape(r, (1,2*const.length))
     d = np.reshape(d, (1,const.length))
@@ -145,7 +159,8 @@ def getChiSquare(M, r, d, C, const):
     res = M*r-d
     resT = res.transpose()
     chiSquare = resT*scipy.sparse.linalg.inv(C)*res
-    return chiSquare
+    reconstructed = M*r
+    return chiSquare, res
 
 def getMatrixDs(normV,indexWeightList, const):
     # Assume the source vector 's' is sorted
