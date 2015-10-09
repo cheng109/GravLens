@@ -72,6 +72,17 @@ Image::Image(string imgFileName) {
 }
 
 
+void Image::getConstants(long *filterPixelNum, long* naxis1, long* naxis2, double *res){
+
+	*filterPixelNum=this->filterPixelNum;
+	*naxis1 = this->naxis1;
+	*naxis2 = this->naxis2;
+	*res = this->res;
+
+
+}
+
+
 void Image::printImageInfo(int ncol, int nrow) {
 	cout << "************************" << endl;
 	cout << "File:   " << fileName << endl;
@@ -87,6 +98,40 @@ void Image::printImageInfo(int ncol, int nrow) {
 		cout << data.at(i) << "\t";
 	}
 	cout << endl;
+}
+
+
+void Image::writeFilterImage(string imgFileName) {
+	fitsfile *fptr;       /* pointer to the FITS file, defined in fitsio.h */
+		int status, ii, jj;
+		long  fpixel;
+		long naxes[2] = { naxis1, naxis2 };   /* image is 300 pixels wide by 200 rows */
+		remove(imgFileName.c_str());               /* Delete old file if it already exists */
+		status = 0;         /* initialize status before calling fitsio routines */
+		if (fits_create_file(&fptr, imgFileName.c_str(), &status)) /* create new FITS file */
+			printerror( status );           /* call printerror if error occurs */
+		if ( fits_create_img(fptr,  bitpix, naxis, naxes, &status) )
+			printerror( status );
+
+		double **array = (double **)malloc(naxis2* sizeof(double**));
+		//array[0] = (double *)malloc( naxis1 * naxis2* sizeof( double ) );
+		array[0] = new double[naxis1*naxis2]();
+		for( ii=1; ii<naxis2; ii++ )
+		      array[ii] = array[ii-1] + naxis1;
+		for (int i=0; i<filterPixelNum;  ++i) {
+			array[filterX[i]][filterY[i]] =filterData[i];
+		}
+		fpixel = 1;                               /* first pixel to write      */
+
+		if (fits_write_img(fptr, TDOUBLE, fpixel, npixels, array[0], &status))
+			printerror( status );
+
+		free( array[0] );  /* free previously allocated memory */
+		free( array);
+		if ( fits_close_file(fptr, &status) )                /* close the file */
+			printerror( status );
+
+
 }
 
 
@@ -139,6 +184,24 @@ void Image::writeToFile(string imgFileName) {
 		printerror( status );
 }
 
+void Image::updateFilterImage(string regionFileName) {
+	vector<double> xpos, ypos;
+	filterPixelNum = parseReagionFile(regionFileName, &xpos, &ypos);
+	//for(vector<double>:;iterator iter= data.begin(); iter!=data.end(); ++iter) {
+	//	if(pnpoly(n, &xpos, &ypos,  testx,  testy))
+
+	//}
+
+	for(size_t i=0; i<naxis1; ++i) {
+		for (size_t j=0; j<naxis2; ++j) {
+			if(pnpoly(filterPixelNum, &xpos, &ypos,  j ,  i)) {
+				filterData.push_back(data[naxis1*i+j]);
+				filterX.push_back(j);
+				filterY.push_back(i);
+			}
+		}
+	}
+}
 
 Image::~Image() {
 	// TODO Auto-generated destructor stub

@@ -22,6 +22,9 @@ int main() {
 	string outFileName = "output.fits";
 	dataImage.writeToFile(outFileName);
 
+	string regionFileName = "mask.reg";
 
+
+	//parseReagionFile( regionFileName);
 
 }

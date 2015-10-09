@@ -19,24 +19,30 @@ class Image {
 	long npixels;
 	int bitpix;
 	double res;
+	bool filtered=0;
+	//double imgXCenter;
+	//double imgYCenter;
+
+	size_t filterPixelNum;
 
 	vector<double> data;
-
-	long counter;
-
+	vector<double> filterData;
+	vector<size_t> filterX;
+	vector<size_t> filterY;
 
 
 public:
 	Image();
 	Image(string imgFileName);
-	void writeToFile(string imgFileName);
+	void getConstants(long *filterPixelNum, long* naxis1, long* naxis2, double *res);
 	void printImageInfo(int ncol, int nrow);
-
-
-
-
+	void updateFilterImage(string regionFileName) ;
+	void writeFilterImage(string imgFileName);
 
 	virtual ~Image();
 };
 
 #endif /* IMAGE_H_ */
+
+
+
