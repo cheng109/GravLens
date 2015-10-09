@@ -12,14 +12,16 @@
 using namespace std;
 
 class Image {
+
 	string fileName;
 	int naxis;
 	long naxis1;
 	long naxis2;
 	long npixels;
+	long filterNPixels;
 	int bitpix;
 	double res;
-	bool filtered=0;
+	//bool filtered=0;
 	//double imgXCenter;
 	//double imgYCenter;
 
@@ -27,19 +29,31 @@ class Image {
 
 	vector<double> data;
 	vector<double> filterData;
-	vector<size_t> filterX;
-	vector<size_t> filterY;
+	vector<int> filterX;
+	vector<int> filterY;
 
 
 public:
 	Image();
 	Image(string imgFileName);
 	void getConstants(long *filterPixelNum, long* naxis1, long* naxis2, double *res);
-	void printImageInfo(int ncol, int nrow);
+	void printImageInfo(int x1, int y1, int x2, int y2);
 	void updateFilterImage(string regionFileName) ;
 	void writeFilterImage(string imgFileName);
+	void writeToFile(string imgFileName);
 
 	virtual ~Image();
+};
+
+
+class Grid {
+public:
+	vector<double> xposList;
+	vector<double> yposList;
+	vector<double> briList;
+
+
+
 };
 
 #endif /* IMAGE_H_ */

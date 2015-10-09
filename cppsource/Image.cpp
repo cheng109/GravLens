@@ -11,6 +11,7 @@
 #include <vector>
 #include <iostream>
 #include "commons.h"
+#include <iomanip>
 using namespace std;
 #define buffsize 10000
 
@@ -46,8 +47,6 @@ Image::Image(string imgFileName) {
 	npixels  = naxes[0] * naxes[1];         /* number of pixels in the image */
 	fpixel   = 1;
 	nullval  = 0;                /* don't check for null values in the image */
-	datamin  = 1.0E30;
-	datamax  = -1.0E30;
 
 	while (npixels > 0)
 	{
@@ -58,9 +57,11 @@ Image::Image(string imgFileName) {
 		if ( fits_read_img(fptr, TFLOAT, fpixel, nbuffer, &nullval,
 				buffer, &anynull, &status) )
 			printerror( status );
-		for(long i=0; i<nbuffer; ++i)
-			data.push_back(buffer[i]);
+		for(long i=0; i<nbuffer; ++i) {
+			//cout << i << "\t" << buffer[i] << endl;
 
+			data.push_back(buffer[i]);
+		}
 		cout << endl;
 		npixels -= nbuffer;    /* increment remaining number of pixels */
 		fpixel  += nbuffer;    /* next pixel to be read in image */
@@ -72,18 +73,18 @@ Image::Image(string imgFileName) {
 }
 
 
-void Image::getConstants(long *filterPixelNum, long* naxis1, long* naxis2, double *res){
 
-	*filterPixelNum=this->filterPixelNum;
+void Image::getConstants(long *length, long* naxis1, long* naxis2, double *res){
+
+	*length=this->filterPixelNum;
 	*naxis1 = this->naxis1;
 	*naxis2 = this->naxis2;
 	*res = this->res;
-
-
 }
 
 
-void Image::printImageInfo(int ncol, int nrow) {
+
+void Image::printImageInfo(int x1, int y1, int x2, int y2) {
 	cout << "************************" << endl;
 	cout << "File:   " << fileName << endl;
 	cout << "NAXIS:  " << naxis << endl;
@@ -94,8 +95,17 @@ void Image::printImageInfo(int ncol, int nrow) {
 	cout << "************************" << endl;
 
 	//cout << counter << endl;
-	for(int i=0; i<npixels; ++i){
-		cout << data.at(i) << "\t";
+	x1 = (x1>0)?x1:0;
+	y1 = (y1>0)?y1:0;
+	x2 = (x2<naxis1)?x2:naxis1;
+	y2 = (y2<naxis2)?y2:naxis2;
+	// in order of DS9 show.
+	for (int y=y2; y>y1; --y) {
+		for(int x=x1; x<x2; ++x) {
+			cout <<setprecision(4) << data[y*naxis+x] << "\t";
+		}
+		cout << endl;
+
 	}
 	cout << endl;
 }
@@ -103,33 +113,35 @@ void Image::printImageInfo(int ncol, int nrow) {
 
 void Image::writeFilterImage(string imgFileName) {
 	fitsfile *fptr;       /* pointer to the FITS file, defined in fitsio.h */
-		int status, ii, jj;
-		long  fpixel;
-		long naxes[2] = { naxis1, naxis2 };   /* image is 300 pixels wide by 200 rows */
-		remove(imgFileName.c_str());               /* Delete old file if it already exists */
-		status = 0;         /* initialize status before calling fitsio routines */
-		if (fits_create_file(&fptr, imgFileName.c_str(), &status)) /* create new FITS file */
-			printerror( status );           /* call printerror if error occurs */
-		if ( fits_create_img(fptr,  bitpix, naxis, naxes, &status) )
-			printerror( status );
-
-		double **array = (double **)malloc(naxis2* sizeof(double**));
-		//array[0] = (double *)malloc( naxis1 * naxis2* sizeof( double ) );
-		array[0] = new double[naxis1*naxis2]();
-		for( ii=1; ii<naxis2; ii++ )
-		      array[ii] = array[ii-1] + naxis1;
-		for (int i=0; i<filterPixelNum;  ++i) {
-			array[filterX[i]][filterY[i]] =filterData[i];
-		}
-		fpixel = 1;                               /* first pixel to write      */
-
-		if (fits_write_img(fptr, TDOUBLE, fpixel, npixels, array[0], &status))
-			printerror( status );
-
-		free( array[0] );  /* free previously allocated memory */
-		free( array);
-		if ( fits_close_file(fptr, &status) )                /* close the file */
-			printerror( status );
+	int status, ii, jj;
+	long  fpixel;
+	long naxes[2] = { naxis1, naxis2 };   /* image is 300 pixels wide by 200 rows */
+	remove(imgFileName.c_str());               /* Delete old file if it already exists */
+	status = 0;         /* initialize status before calling fitsio routines */
+	if (fits_create_file(&fptr, imgFileName.c_str(), &status)) /* create new FITS file */
+		printerror( status );           /* call printerror if error occurs */
+	if ( fits_create_img(fptr,  bitpix, naxis, naxes, &status) )
+		printerror( status );
+	double **array = (double **)malloc(naxis2* sizeof(double**));
+	array[0] = (double *)malloc( naxis1 * naxis2* sizeof( double ) );
+	for( ii=1; ii<naxis2; ii++ )
+		array[ii] = array[ii-1] + naxis1;
+	for (int i = 0; i < naxis2; i++) {
+		for (int j = 0; j < naxis1; j++)
+			array[i][j] = 0.0;
+	}
+	for( ii=1; ii<naxis2; ii++ )
+		array[ii] = array[ii-1] + naxis1;
+	cout << filterData.size() << endl;
+	for (int i=0; i<filterData.size();  ++i)
+		array[filterY[i]][filterX[i]] = filterData[i];
+	fpixel = 1;                               /* first pixel to write      */
+	if (fits_write_img(fptr, TDOUBLE, fpixel, npixels, array[0], &status))
+		printerror( status );
+	free( array[0] );  /* free previously allocated memory */
+	free( array);
+	if ( fits_close_file(fptr, &status) )                /* close the file */
+		printerror( status );
 
 
 }
@@ -140,30 +152,13 @@ void Image::writeToFile(string imgFileName) {
 	int status, ii, jj;
 	long  fpixel;
 
-	/* initialize FITS image parameters */
-
-	//char filename[] = "";             /* name for new FITS file */
 	long naxes[2] = { naxis1, naxis2 };   /* image is 300 pixels wide by 200 rows */
-
-
 	remove(imgFileName.c_str());               /* Delete old file if it already exists */
-
 	status = 0;         /* initialize status before calling fitsio routines */
-
 	if (fits_create_file(&fptr, imgFileName.c_str(), &status)) /* create new FITS file */
 		printerror( status );           /* call printerror if error occurs */
-
-	/* write the required keywords for the primary array image.     */
-	/* Since bitpix = USHORT_IMG, this will cause cfitsio to create */
-	/* a FITS image with BITPIX = 16 (signed short integers) with   */
-	/* BSCALE = 1.0 and BZERO = 32768.  This is the convention that */
-	/* FITS uses to store unsigned integers.  Note that the BSCALE  */
-	/* and BZERO keywords will be automatically written by cfitsio  */
-	/* in this case.                                                */
-
 	if ( fits_create_img(fptr,  bitpix, naxis, naxes, &status) )
 		printerror( status );
-
 	double **array = (double **)malloc(naxis2* sizeof(double**));
 	array[0] = (double *)malloc( naxis1 * naxis2* sizeof( double ) );
 	for( ii=1; ii<naxis2; ii++ )
@@ -187,20 +182,18 @@ void Image::writeToFile(string imgFileName) {
 void Image::updateFilterImage(string regionFileName) {
 	vector<double> xpos, ypos;
 	filterPixelNum = parseReagionFile(regionFileName, &xpos, &ypos);
-	//for(vector<double>:;iterator iter= data.begin(); iter!=data.end(); ++iter) {
-	//	if(pnpoly(n, &xpos, &ypos,  testx,  testy))
 
-	//}
+	for(int x=0; x<naxis1; ++x) {
+		for (int y=0; y<naxis2; ++y) {
+			if(pnpoly(filterPixelNum, &xpos, &ypos,  x ,  y)) {
 
-	for(size_t i=0; i<naxis1; ++i) {
-		for (size_t j=0; j<naxis2; ++j) {
-			if(pnpoly(filterPixelNum, &xpos, &ypos,  j ,  i)) {
-				filterData.push_back(data[naxis1*i+j]);
-				filterX.push_back(j);
-				filterY.push_back(i);
+				filterData.push_back(data[naxis1*y+x]);
+				filterX.push_back(x);
+				filterY.push_back(y);
 			}
 		}
 	}
+
 }
 
 Image::~Image() {

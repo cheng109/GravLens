@@ -16,6 +16,41 @@
 
 using namespace std;
 
+Const::Const(Image* dataImage) {
+		//imgSize[0] = dataImage->
+		long naxis1, naxis2, len;
+		double res;
+		dataImage->getConstants(&len, &naxis1, &naxis2, &res);
+		res = 0.3;
+		srcSize[0]=naxis1; srcSize[1] =naxis2;
+		imgSize[0]=naxis1; imgSize[1] =naxis2;
+		potSize[0]=naxis1; potSize[1] =naxis2;
+		srcRes = res;
+		imgRes = res;
+		potRes = res;
+		srcXCenter = naxis1/2.0;
+		srcYCenter = naxis2/2.0;
+		imgXCenter = naxis1/2.0;
+		imgYCenter = naxis2/2.0;
+		potXCenter = naxis1/2.0;
+		potYCenter = naxis2/2.0 ;
+		length = len;
+}
+
+void Const::printConstList(){
+		cout << "*********** CONSTANTS *********" << endl;
+		cout << "srcSize:    " << srcSize[0] << ",\t"<< srcSize[1] << endl;
+		cout << "imgSize:    " << imgSize[0] << ",\t"<<imgSize[1]  << endl;
+		cout << "potSize:    " << potSize[0] << ",\t"<<potSize[1]  << endl;
+		cout << "srcRes:     " << srcRes << endl;
+		cout << "imgRes:     " << imgRes << endl;
+		cout << "potRes:     " << potRes << endl;
+		cout << "srcCenter:  " << srcXCenter << ",\t"<<srcYCenter << endl;
+		cout << "imgCenter:  " << imgXCenter << ",\t"<<imgYCenter << endl;
+		cout << "potCenter:  " << potXCenter << ",\t"<<potYCenter << endl;
+		cout << "length:     " << length << endl;
+		cout << "*******************************" << endl;
+}
 
 void printerror( int status)
 {
@@ -61,7 +96,7 @@ size_t parseReagionFile(string regionFileName, vector<double> *xpos, vector<doub
 			while(getline(ss, token, ',' )){
 				if(flag<0) xpos->push_back(stod(token));
 				if(flag>0) ypos->push_back(stod(token));
-				cout << token << endl;
+				//cout << token << endl;
 				flag = (-1)*flag;
 			};
 		}

@@ -13,15 +13,16 @@ Model::Model() {
 }
 
 
-void Model::getDeflectionAnle(Const* const, size_t imgX, size_t imgY, double *dx, double *dy) {
+
+void Model::getDeflectionAnle(Const* conList, size_t imgX, size_t imgY, double *dx, double *dy) {
 	if(name.compare("PTMASS")==0) {
-		double fX = (imgX -const->imgXCenter-modelCenterX)*const->imgRes;
-		double fY = (imgY -const->imgYCenter-modelCenterY)*const->imgRes;
-
-
+		double fX = (imgX -conList->imgXCenter-modelCenterX)*conList->imgRes;
+		double fY = (imgY -conList->imgYCenter-modelCenterY)*conList->imgRes;
 	}
 
+
 }
+
 
 
 Model::~Model() {

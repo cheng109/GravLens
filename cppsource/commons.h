@@ -7,7 +7,7 @@
 
 #include <string>
 #include <vector>
-#include "Image.h""
+#include "Image.h"
 using namespace std;
 
 class Const{
@@ -22,25 +22,12 @@ public:
 	double srcYCenter;
 	double imgXCenter;
 	double imgYCenter;
+	double potXCenter;
+	double potYCenter;
 	double length;
 
-	Const(Image* dataImage) {
-		//imgSize[0] = dataImage->
-		dataImage->getConstants(length, long* naxis1, long* naxis2, double *res);
-		srcSize[0]=1; srcSize[1] =1;
-		imgSize[0]=1; imgSize[1] =2;
-		potSize[0]=1; potSize[1]=2;
-		srcRes =  dataImage->res;
-		imgRes = dataImage->res;
-		potRes = dataImage->res;
-		srcXCenter = 1;
-		srcYCenter =2;
-		imgXCenter = 1;
-		imgYCenter =2 ;
-		length = dataImage->npixels;
-
-
-	}
+	Const(Image* dataImage) ;
+	void printConstList();
 };
 
 
