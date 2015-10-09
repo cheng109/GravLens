@@ -8,6 +8,7 @@ import pyregion
 import scipy.sparse
 import commons
 import math
+import numpy.random
 
 class Constants():
     def __init__(self, srcSize, imgSize,potSize, srcRes, imgRes, potRes, length):
@@ -357,6 +358,10 @@ def main():
     #getLinerInterpolate(A,D,C,direction='y')
     print getEnisteinRadius(zl, zs, Mtot, H0, WM)
 
+
+    test = np.random.rand(5, 4)
+    writeFitsImage(test, "cppsource/sample.fits")
+    print test
     return "Nothing to do!"
 
 

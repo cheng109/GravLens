@@ -5,13 +5,9 @@
  *      Author: cheng109
  */
 
-#ifndef COMMONS_H_
-#define COMMONS_H_
+#include <string>
+using namespace std;
 
+void printerror( int status);
 
-
-void readimage(void);
-void printerror(int status );
-
-
-#endif /* COMMONS_H_ */
+int pnpoly(int nvert, float *vertx, float *verty, float testx, float testy);

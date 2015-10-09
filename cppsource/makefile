@@ -1,5 +1,5 @@
-include=-I/opt/local/include
-lib=-L/opt/local/lib
+include=-I/Users/cheng109/toberemoved/phosim/phosim_core/source/cfitsio/include
+lib=-L/Users/cheng109/toberemoved/phosim/phosim_core/source/cfitsio/lib
 all:
-	g++ commons.cpp main.cpp -o junGL
+	g++ -lcfitsio $(include) $(lib)  commons.cpp main.cpp Image.cpp -o junGL
 	./junGL
