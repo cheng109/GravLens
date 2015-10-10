@@ -23,8 +23,6 @@ Model::Model() {
 Model::Model(string name, double modelCenterX, double modelCenterY, double critR, double e,  double PA, double mass):
 		name(name), modelCenterX(modelCenterX), modelCenterY(modelCenterY), critR(critR), e(e), PA(PA), mass(mass) {
 
-
-
 }
 
 
@@ -57,8 +55,8 @@ void Model::getDeflectionAngle(Const* conList, int imgX, int imgY, double *srcX,
 
 	*srcX = (pfX - pDeltaX)/conList->srcRes+conList->srcXCenter;
 	*srcY = (pfY - pDeltaY)/conList->srcRes+conList->srcYCenter;
-	if (*srcX >70)
-	cout << imgX << "\t" << imgY << "\t" << fX << "\t" << fY << "\t"<<sqrt(fDenom) << "\t"<< pDeltaX <<"\t" << pDeltaY <<"\t" << *srcX << "\t" << *srcY <<endl;
+	//	if (*srcX >70)
+	//cout << imgX << "\t" << imgY << "\t" << fX << "\t" << fY << "\t"<<sqrt(fDenom) << "\t"<< pDeltaX <<"\t" << pDeltaY <<"\t" << *srcX << "\t" << *srcY <<endl;
 
 }
 Model::~Model() {

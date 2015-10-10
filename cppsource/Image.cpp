@@ -29,14 +29,11 @@ Image::Image(vector<double> xpos, vector<double> ypos, vector<double> *briList, 
 			naxis(2), naxis1(naxis1), naxis2(naxis2), bitpix(bitpix), data(naxis1*naxis2, 0) {
 	npixels = naxis1*naxis2;
 
-	//data.resize(n, 100);
 	for(int i=0; i< briList->size(); ++i) {
-		long index = naxis1*floor(ypos[i])+floor(xpos[i]);
-		//if (index<n) {
-			data[index] += briList->at(i);
-			cout <<  index  << "\t";
-			cout << data[index]  << "\t" ;
-	//	}
+		long index = naxis1*nearbyint(ypos[i]-0.5)+nearbyint(xpos[i]-0.5);
+		if (index<npixels) 
+		  data[index] += briList->at(i);
+			
 	}
 
 }
@@ -204,14 +201,14 @@ void Image::writeToFile(string imgFileName) {
 void Image::updateFilterImage(string regionFileName) {
 	vector<double> xpos, ypos;
 	int lenRegionList =parseReagionFile(regionFileName, &xpos, &ypos);
-	cout << "....." << npixels << endl;
+
 	for(int x=0; x<naxis1; ++x) {
 		for (int y=0; y<naxis2; ++y) {
-			if(pnpoly(lenRegionList, &xpos, &ypos,  x ,  y)) {
+		  if(pnpoly(lenRegionList, &xpos, &ypos,  double(x+0.5) ,  double(y+0.5))) {
 
 				filterData.push_back(data[naxis1*y+x]);
-				filterX.push_back(x);
-				filterY.push_back(y);
+				filterX.push_back(x+1);
+				filterY.push_back(y+1);
 			}
 		}
 	}
