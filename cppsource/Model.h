@@ -10,6 +10,8 @@
 #include <string>
 #include <vector>
 #include "commons.h"
+#include "Image.h"
+#include <map>
 using namespace std;
 
 class Model {
@@ -17,11 +19,18 @@ class Model {
 	string name;
 	double modelCenterX;
 	double modelCenterY;
+	double critR;
+	double e;
+	double q;
+	double PA;
+	double mass;
 
 
 public:
 	Model();
-	void getDeflectionAnle(Const* conList, size_t imgX, size_t imgY, double *dx, double *dy);
+	Model(string name,double modelCenterX, double modelCenterY, double critR, double e, double PA, double mass);
+	void getDeflectionAngle(Const* conList, int imgX, int imgY, double *srcX, double *srcY);
+	map<pair<int, int>,int> createPosMapping(Image* image, vector<double>* srcX,vector<double>* srcY,  Const* conList);
 	virtual ~Model();
 };
 

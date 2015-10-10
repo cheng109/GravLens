@@ -12,15 +12,19 @@
 #include <fstream>
 #include <sstream>
 
+
 #define buffsize 1000
 
 using namespace std;
 
+
+
 Const::Const(Image* dataImage) {
 		//imgSize[0] = dataImage->
-		long naxis1, naxis2, len;
+		long naxis1, naxis2, len ;
+		int bit;
 		double res;
-		dataImage->getConstants(&len, &naxis1, &naxis2, &res);
+		dataImage->getConstants(&len, &naxis1, &naxis2, &res, &bit);
 		res = 0.3;
 		srcSize[0]=naxis1; srcSize[1] =naxis2;
 		imgSize[0]=naxis1; imgSize[1] =naxis2;
@@ -35,6 +39,7 @@ Const::Const(Image* dataImage) {
 		potXCenter = naxis1/2.0;
 		potYCenter = naxis2/2.0 ;
 		length = len;
+		bitpix = bit;
 }
 
 void Const::printConstList(){
@@ -78,7 +83,7 @@ bool pnpoly(size_t nvert, vector<double> *vertx, vector<double> *verty, double t
 }
 
 
-size_t parseReagionFile(string regionFileName, vector<double> *xpos, vector<double> *ypos) {
+int parseReagionFile(string regionFileName, vector<double> *xpos, vector<double> *ypos) {
 
 	ifstream regionFile(regionFileName.c_str());
 	string line, token;
@@ -102,9 +107,6 @@ size_t parseReagionFile(string regionFileName, vector<double> *xpos, vector<doub
 		}
 		if(xpos->size()!=ypos->size())
 			cout << "Error when reading region File!" << endl;
-
-
-
 	}
 	return xpos->size();
 

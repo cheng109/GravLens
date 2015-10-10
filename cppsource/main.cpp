@@ -1,10 +1,13 @@
 #include <iostream>
 #include <string>
-#include "commons.h"
+#include <map>
 #include "Image.h"
+#include "commons.h"
 #include "fitsio.h"
+#include "Model.h"
+#include <armadillo>
 using namespace std;
-
+using namespace arma;
 
 
 Image* prepare(string imgFileName, string regionFileName) {
@@ -28,30 +31,40 @@ int main() {
 
 
 	Image* dataImage = prepare( imageFileName, regionFileName);
-	Const *constList = new Const(dataImage);
-	constList->printConstList();
+	Const *conList = new Const(dataImage);
+
+	vec d = dataImage->getMatrixD();
+
+	//cout << d << endl;
 
 
 
 
 
-	//dataImage.printImageInfo(22,14,25,21);
 
+	// output source Image:
 
-	//dataImage.writeToFile("output.fits");
+	vector<double> srcX(conList->length, 0);
+	vector<double> srcY(conList->length, 0);
 
+	Model LM_PTMASS("PTMASS", 0, 0, 5.7, 0,0,0 );
 
+	map<pair<int, int>,int> posMap = LM_PTMASS.createPosMapping(dataImage, &srcX, &srcY, conList);
+	for(int i=0; i<conList->length; ++i) {
+	if(srcX[i]>60) cout << srcX[i] << "\t" << srcY[i] << endl; }
+	vector<double> srcBriList(conList->length, 0);
+	for (int i=0; i<conList->length; ++i) {
+		srcBriList[i] = d[i];
+	}
 
-	vector<double> xpos;
-	vector<double> ypos;
+	Image srcImg(srcX, srcY, &srcBriList, conList->srcSize[0], conList->srcSize[1], conList->bitpix);
+	//srcImg.printImageInfo(1,1, 100, 100);
+	dataImage->writeToFile("test.fits");
+	srcImg.writeToFile("src.fits");
 
+	conList->printConstList();
 
-	size_t n = parseReagionFile("mask.reg", &xpos, &ypos);
-
-
-
-
-
+	return 0;
 
 
 }

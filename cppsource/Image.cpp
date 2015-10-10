@@ -12,6 +12,9 @@
 #include <iostream>
 #include "commons.h"
 #include <iomanip>
+#include <armadillo>
+#include <cmath>
+using namespace arma;
 using namespace std;
 #define buffsize 10000
 
@@ -20,6 +23,24 @@ Image::Image() {
 	// TODO Auto-generated constructor stub
 
 }
+
+
+Image::Image(vector<double> xpos, vector<double> ypos, vector<double> *briList, long naxis1, long naxis2, int bitpix):
+			naxis(2), naxis1(naxis1), naxis2(naxis2), bitpix(bitpix), data(naxis1*naxis2, 0) {
+	npixels = naxis1*naxis2;
+
+	//data.resize(n, 100);
+	for(int i=0; i< briList->size(); ++i) {
+		long index = naxis1*floor(ypos[i])+floor(xpos[i]);
+		//if (index<n) {
+			data[index] += briList->at(i);
+			cout <<  index  << "\t";
+			cout << data[index]  << "\t" ;
+	//	}
+	}
+
+}
+
 
 Image::Image(string imgFileName) {
 
@@ -58,8 +79,6 @@ Image::Image(string imgFileName) {
 				buffer, &anynull, &status) )
 			printerror( status );
 		for(long i=0; i<nbuffer; ++i) {
-			//cout << i << "\t" << buffer[i] << endl;
-
 			data.push_back(buffer[i]);
 		}
 		cout << endl;
@@ -74,12 +93,13 @@ Image::Image(string imgFileName) {
 
 
 
-void Image::getConstants(long *length, long* naxis1, long* naxis2, double *res){
+void Image::getConstants(long *length, long* naxis1, long* naxis2, double *res, int *bit){
 
 	*length=this->filterPixelNum;
 	*naxis1 = this->naxis1;
 	*naxis2 = this->naxis2;
 	*res = this->res;
+	*bit = this->bitpix;
 }
 
 
@@ -102,12 +122,13 @@ void Image::printImageInfo(int x1, int y1, int x2, int y2) {
 	// in order of DS9 show.
 	for (int y=y2; y>y1; --y) {
 		for(int x=x1; x<x2; ++x) {
-			cout <<setprecision(4) << data[y*naxis+x] << "\t";
+			cout <<setprecision(4) << this->data[y*naxis1+x] << "\t";
 		}
 		cout << endl;
 
 	}
 	cout << endl;
+	cout << data.size() << endl;
 }
 
 
@@ -133,8 +154,9 @@ void Image::writeFilterImage(string imgFileName) {
 	for( ii=1; ii<naxis2; ii++ )
 		array[ii] = array[ii-1] + naxis1;
 	cout << filterData.size() << endl;
-	for (int i=0; i<filterData.size();  ++i)
+	for (int i=0; i<filterData.size();  ++i) {
 		array[filterY[i]][filterX[i]] = filterData[i];
+	}
 	fpixel = 1;                               /* first pixel to write      */
 	if (fits_write_img(fptr, TDOUBLE, fpixel, npixels, array[0], &status))
 		printerror( status );
@@ -181,11 +203,11 @@ void Image::writeToFile(string imgFileName) {
 
 void Image::updateFilterImage(string regionFileName) {
 	vector<double> xpos, ypos;
-	filterPixelNum = parseReagionFile(regionFileName, &xpos, &ypos);
-
+	int lenRegionList =parseReagionFile(regionFileName, &xpos, &ypos);
+	cout << "....." << npixels << endl;
 	for(int x=0; x<naxis1; ++x) {
 		for (int y=0; y<naxis2; ++y) {
-			if(pnpoly(filterPixelNum, &xpos, &ypos,  x ,  y)) {
+			if(pnpoly(lenRegionList, &xpos, &ypos,  x ,  y)) {
 
 				filterData.push_back(data[naxis1*y+x]);
 				filterX.push_back(x);
@@ -193,10 +215,27 @@ void Image::updateFilterImage(string regionFileName) {
 			}
 		}
 	}
+	filterPixelNum = filterData.size() ;
+	for(int i=0; i<filterData.size(); ++i) {
+		index.push_back(i);
+	}
+	cout << "filterPixelNum" << "\t" << filterPixelNum<<endl;
+}
+
+vec Image::getMatrixD() {
+	vec d(filterPixelNum);
+	for(int i=0; i<filterPixelNum; ++i) {
+
+		d[i]= filterData[i];
+
+	}
+	return d;
 
 }
+
+
+
 
 Image::~Image() {
 	// TODO Auto-generated destructor stub
 }
-

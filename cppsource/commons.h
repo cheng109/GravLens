@@ -5,10 +5,15 @@
  *      Author: cheng109
  */
 
+#ifndef COMMONS_H_
+#define COMMONS_H_
+
+
 #include <string>
 #include <vector>
 #include "Image.h"
 using namespace std;
+
 
 class Const{
 public:
@@ -25,15 +30,18 @@ public:
 	double potXCenter;
 	double potYCenter;
 	double length;
+	int bitpix;
 
-	Const(Image* dataImage) ;
+	Const(Image* image);
 	void printConstList();
 };
-
 
 
 void printerror( int status);
 
 bool pnpoly(size_t nvert, vector<double> *vertx, vector<double> *verty, double testx, double testy);
 
-size_t parseReagionFile(string regionFileName, vector<double> *xpos, vector<double> *ypos);
+int parseReagionFile(string regionFileName, vector<double> *xpos, vector<double> *ypos);
+
+
+#endif
