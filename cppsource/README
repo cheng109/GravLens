@@ -1,0 +1,5 @@
+Make sure the following are uncommented/commented in include/armadillo_bits/config.hpp:
+#define ARMA_USE_LAPACK
+#define ARMA_USE_BLAS
+#define ARMA_64BIT_WORD
+#define ARMA_USE_CXX11

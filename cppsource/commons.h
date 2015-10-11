@@ -13,8 +13,10 @@
 #include <vector>
 #include "Image.h"
 #include <map>
-using namespace std;
+#include <armadillo>
 
+using namespace std;
+using namespace arma;
 
 class Conf{
 public:
@@ -44,5 +46,8 @@ bool pnpoly(size_t nvert, vector<double> *vertx, vector<double> *verty, double t
 void updateConf(string confFileName);
 int parseReagionFile(string regionFileName, vector<double> *xpos, vector<double> *ypos);
 map<string, double> parseConfigure(string confFileName) ;
+double getPenalty(sp_mat M, vec r, vec d);
+
+
 
 #endif

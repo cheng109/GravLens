@@ -37,7 +37,7 @@ Image::Image(vector<double> xpos, vector<double> ypos, vector<double> *briList, 
 		if(x>0 && x< naxis1 && y>0 && y<naxis2) {
 			index = naxis1*y+x;
 		}
-		cout <<i << "\t" << xpos[i] << "\t" << ypos[i] << "\t" << index << "\t" << endl;
+		//cout <<i << "\t" << xpos[i] << "\t" << ypos[i] << "\t" << index << "\t" << endl;
 
 		data[index] += briList->at(i);
 			
@@ -85,7 +85,6 @@ Image::Image(string imgFileName) {
 		for(long i=0; i<nbuffer; ++i) {
 			data.push_back(buffer[i]);
 		}
-		cout << endl;
 		npixels -= nbuffer;    /* increment remaining number of pixels */
 		fpixel  += nbuffer;    /* next pixel to be read in image */
 	}
@@ -231,13 +230,27 @@ vec Image::getMatrixD() {
 	for(int i=0; i<filterPixelNum; ++i) {
 
 		d[i]= filterData[i];
-
 	}
 	return d;
 
 }
 
+sp_mat Image::getVarMatrix(string regionFileName)  {
 
+	this->updateFilterImage(regionFileName);
+	long n= this->filterPixelNum;
+	//n = 100;
+	sp_mat C = speye<sp_mat>(n, n);
+/*
+	for(int i=0; i<n; ++i) {
+		C(i,i)=this->filterData[i];
+
+	}
+*/
+
+	return C;
+
+}
 
 
 Image::~Image() {

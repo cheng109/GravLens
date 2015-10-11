@@ -10,16 +10,15 @@ using namespace std;
 using namespace arma;
 
 
-Image* prepare(string imgFileName, string regionFileName) {
+Image* prepare(string imgFileName, string regionFileName, string varFileName) {
 	Image *dataImage = new Image(imgFileName);
+	Image *varImage = new Image(varFileName);
 	dataImage->updateFilterImage(regionFileName);
 	dataImage->writeFilterImage("filteredImage.fits");
-
+	sp_mat C= varImage->getVarMatrix(regionFileName);
 
 	return dataImage;
-
 }
-
 
 
 
@@ -27,10 +26,10 @@ Image* prepare(string imgFileName, string regionFileName) {
 int main() {
 
 	string imageFileName="jun_image.fits";
-	string regionFileName = "mask.reg";
+	string regionFileName = "mask_l.reg";
 	string confFileName = "conf.txt";
-
-	Image* dataImage = prepare( imageFileName, regionFileName);
+	string varFileName = "jun_var.fits";
+	Image* dataImage = prepare( imageFileName, regionFileName, varFileName);
 	Conf *conList = new Conf(dataImage, confFileName);
 
 	vec d = dataImage->getMatrixD();

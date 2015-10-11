@@ -8,14 +8,16 @@
 #include "fitsio.h"
 #include <string>
 #include "Image.h"
+#include <assert.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <iterator>
+#include <armadillo>
 
 
 #define buffsize 1000
-
+using namespace arma;
 using namespace std;
 
 
@@ -150,6 +152,23 @@ map<string, double> parseConfigure(string confFileName) {
 	return confMap;
 
 }
+
+
+double getPenalty(sp_mat M, vec r, vec d) {
+
+	//  chi2 =  (M*r-d)^T(M*r-d)
+	/*vec res = M*r-d;
+	vec chi2 =  (res.t()*res).at(0);
+
+	return chi2;
+
+*/
+
+}
+
+
+
+
 
 
 

@@ -49,7 +49,46 @@ void Model::getDeflectionAngle(Conf* conList, int imgX, int imgY, double *srcX, 
 	}
 
 	if(name.compare("SIE")==0) {
-		cout << endl;
+		//if (fX == 0 && fY == 0) {
+		//	*pDeltaX = *pDeltaY = pLensComp->fParameter[0];
+		//
+		//						break;
+		//					}
+/*		real_t	phi,root1mq,fq,fac,fCore=0,fCosTheta,fSinTheta,x1,y1,deltax1,deltay1;
+
+
+
+						/* pre-calculate constants
+						fCosTheta = cos(pLensComp->fParameter[2]*M_PI/180);
+						fSinTheta = sin(pLensComp->fParameter[2]*M_PI/180);
+
+						fq = pLensComp->fParameter[1];
+						  if (fq > 1.0) {
+						                    iStatus = LM_BADPROJ;
+						                    break;
+						                }
+						                if (fq==1.0) fq = 0.999;
+
+										 rotate reference frame to x-axis
+										x1 = fX*fCosTheta + fY*fSinTheta;
+										y1 = -fX*fSinTheta + fY*fCosTheta;
+
+										root1mq = sqrt(1.0-fq*fq);
+										phi = sqrt(fq*fq*(fCore*fCore + x1*x1) + y1*y1);
+										 use sqrt(fq) here not fq. This presevers scale of Einstein Radius
+										fac = pLensComp->fParameter[0]*sqrt(fq)/root1mq;
+
+										deltax1 = fac*atan(root1mq*x1/(phi + fCore));
+										deltay1 = fac*lm_arctanh(root1mq*y1/(phi+ fCore*fq*fq));
+
+										 rotate back again
+										*pDeltaX = deltax1*fCosTheta - deltay1*fSinTheta;
+										*pDeltaY = deltay1*fCosTheta + deltax1*fSinTheta;
+
+						                 printf("x1,y1: %g,%g. root1mq: %g, phi: %g, fac: %g\n",x1,y1,root1mq,phi,fac);
+
+									}
+				*/
 	}
 
 

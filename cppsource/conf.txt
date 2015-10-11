@@ -12,6 +12,12 @@ srcRes	0.03
 imgRes	0.04
 potRes	0.3
 
+## Files
+#imageFileName	jun_image.fits
+#regionFileName	mask_l.reg
+
+
+
 ## Source plane size
-srcX	200
-srcY	200
+srcX	500
+srcY	500

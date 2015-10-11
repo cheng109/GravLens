@@ -53,7 +53,8 @@ public:
 	void writeToFile(string imgFileName);
 
 	vec getMatrixD();
-
+	sp_mat getVarMatrix(string regionFileName);
+	sp_mat getPSFMatrix(string psfFileName, long dim);
 	virtual ~Image();
 };
 
