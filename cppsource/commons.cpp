@@ -11,6 +11,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <iterator>
 
 
 #define buffsize 1000
@@ -19,31 +20,41 @@ using namespace std;
 
 
 
-Const::Const(Image* dataImage) {
+Conf::Conf(Image* dataImage, string confFileName) {
 		//imgSize[0] = dataImage->
 		long naxis1, naxis2, len ;
 		int bit;
 		double res;
 		dataImage->getConstants(&len, &naxis1, &naxis2, &res, &bit);
 		res = 0.3;
-		srcSize[0]=naxis1; srcSize[1] =naxis2;
+
 		imgSize[0]=naxis1; imgSize[1] =naxis2;
 		potSize[0]=naxis1; potSize[1] =naxis2;
-		srcRes = res;
-		imgRes = res;
-		potRes = res;
-		srcXCenter = naxis1/2.0;
-		srcYCenter = naxis2/2.0;
+
+
 		imgXCenter = naxis1/2.0;
 		imgYCenter = naxis2/2.0;
 		potXCenter = naxis1/2.0;
 		potYCenter = naxis2/2.0 ;
 		length = len;
 		bitpix = bit;
+		map<string, double> confMap = parseConfigure(confFileName);
+
+		srcRes = confMap["srcRes"];
+		imgRes = confMap["imgRes"];
+		potRes = confMap["potRes"];
+
+		srcSize[0] =confMap["srcX"];
+		srcSize[1] =confMap["srcY"];
+
+		srcXCenter = srcSize[0]/2.0;
+		srcYCenter = srcSize[1]/2.0;
 }
 
-void Const::printConstList(){
-		cout << "*********** CONSTANTS *********" << endl;
+
+
+void Conf::printConfList(){
+		cout << "*********** ConfANTS *********" << endl;
 		cout << "srcSize:    " << srcSize[0] << ",\t"<< srcSize[1] << endl;
 		cout << "imgSize:    " << imgSize[0] << ",\t"<<imgSize[1]  << endl;
 		cout << "potSize:    " << potSize[0] << ",\t"<<potSize[1]  << endl;
@@ -113,8 +124,32 @@ int parseReagionFile(string regionFileName, vector<double> *xpos, vector<double>
 }
 
 
+map<string, double> parseConfigure(string confFileName) {
 
+	map<string, double> confMap;
+	ifstream confFile(confFileName.c_str());
+	string line;
+	vector<string> items;
+	while (getline(confFile, line)) {
+		//cout << line << endl;
+		items.clear();
+		if(line[0]!='#') {
+			istringstream iss(line);
+			//cout << iss << endl;
+			copy(istream_iterator<string>(iss),
+			      istream_iterator<string>(),
+			      back_inserter(items));
+			//cout << items.size() << endl;
+			if (items.size()>=2)	  {
+				confMap[items[0]] = stod(items[1]);
+				cout << items[0] << "\t" << items[1] << endl;
+			}
+		}
+	}
 
+	return confMap;
+
+}
 
 
 

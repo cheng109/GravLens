@@ -1,0 +1,17 @@
+## Setting primary parameters: 
+omega     0.28600
+lambda	  0.70000
+weos	  -1.000000
+hubble	  0.696000
+srcZ	2.379
+lenZ	0.4457
+
+
+## Setting secondary parameters: 
+srcRes	0.03
+imgRes	0.04
+potRes	0.3
+
+## Source plane size
+srcX	200
+srcY	200

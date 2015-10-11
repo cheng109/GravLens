@@ -27,12 +27,19 @@ Image::Image() {
 
 Image::Image(vector<double> xpos, vector<double> ypos, vector<double> *briList, long naxis1, long naxis2, int bitpix):
 			naxis(2), naxis1(naxis1), naxis2(naxis2), bitpix(bitpix), data(naxis1*naxis2, 0) {
-	npixels = naxis1*naxis2;
 
+	npixels = naxis1*naxis2;
+	long index=0, x, y;
 	for(int i=0; i< briList->size(); ++i) {
-		long index = naxis1*nearbyint(ypos[i]-0.5)+nearbyint(xpos[i]-0.5);
-		if (index<npixels) 
-		  data[index] += briList->at(i);
+		x = nearbyint(xpos[i]);
+		y = nearbyint(ypos[i]);
+
+		if(x>0 && x< naxis1 && y>0 && y<naxis2) {
+			index = naxis1*y+x;
+		}
+		cout <<i << "\t" << xpos[i] << "\t" << ypos[i] << "\t" << index << "\t" << endl;
+
+		data[index] += briList->at(i);
 			
 	}
 

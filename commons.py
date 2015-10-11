@@ -359,7 +359,10 @@ def main():
     print getEnisteinRadius(zl, zs, Mtot, H0, WM)
 
 
-    test = np.random.rand(5, 4)
+    test = np.zeros((66, 53))
+    for i in range(66) :
+        for j in range(53):
+            test[i][j] = i**2+j**2
     writeFitsImage(test, "cppsource/sample.fits")
     print test
     return "Nothing to do!"

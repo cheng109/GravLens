@@ -27,7 +27,7 @@ Model::Model(string name, double modelCenterX, double modelCenterY, double critR
 
 
 
-void Model::getDeflectionAngle(Const* conList, int imgX, int imgY, double *srcX, double *srcY) {
+void Model::getDeflectionAngle(Conf* conList, int imgX, int imgY, double *srcX, double *srcY) {
 	double fX = (imgX -conList->imgXCenter-modelCenterX)*conList->imgRes;   // Model center frame
 	double fY = (imgY -conList->imgYCenter-modelCenterY)*conList->imgRes;
 
@@ -64,7 +64,7 @@ Model::~Model() {
 }
 
 
-map<pair<int, int>,int> Model::createPosMapping(Image* image, vector<double>* srcXList,vector<double>* srcYList, Const* conList) {
+map<pair<int, int>,int> Model::createPosMapping(Image* image, vector<double>* srcXList,vector<double>* srcYList, Conf* conList) {
 
 	map<pair<int, int>,int> posMap;
 
@@ -80,7 +80,7 @@ map<pair<int, int>,int> Model::createPosMapping(Image* image, vector<double>* sr
 	return posMap;
 }
 
-mat buildLensMatrix(Image* image, Model* model, Const* constList) {
+mat buildLensMatrix(Image* image, Model* model, Conf* constList) {
 
 	mat L(constList->length,constList->length, fill::eye);
 

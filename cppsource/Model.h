@@ -29,8 +29,8 @@ class Model {
 public:
 	Model();
 	Model(string name,double modelCenterX, double modelCenterY, double critR, double e, double PA, double mass);
-	void getDeflectionAngle(Const* conList, int imgX, int imgY, double *srcX, double *srcY);
-	map<pair<int, int>,int> createPosMapping(Image* image, vector<double>* srcX,vector<double>* srcY,  Const* conList);
+	void getDeflectionAngle(Conf* conList, int imgX, int imgY, double *srcX, double *srcY);
+	map<pair<int, int>,int> createPosMapping(Image* image, vector<double>* srcX,vector<double>* srcY,  Conf* conList);
 	virtual ~Model();
 };
 

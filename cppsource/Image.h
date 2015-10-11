@@ -16,7 +16,7 @@
 using namespace std;
 using namespace arma;
 
-class Const;
+class Conf;
 
 class Image {
 friend class Model;
