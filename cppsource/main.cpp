@@ -6,65 +6,65 @@
 #include "fitsio.h"
 #include "Model.h"
 #include <armadillo>
+#include <tuple>
+#include <map>
 using namespace std;
 using namespace arma;
 
 
-Image* prepare(string imgFileName, string regionFileName, string varFileName) {
-	Image *dataImage = new Image(imgFileName);
-	Image *varImage = new Image(varFileName);
-	dataImage->updateFilterImage(regionFileName);
-	dataImage->writeFilterImage("filteredImage.fits");
-	sp_mat C= varImage->getVarMatrix(regionFileName);
-
-	return dataImage;
-}
-
-
-
-
 int main() {
 
-	string imageFileName="jun_image.fits";
-	string regionFileName = "mask_l.reg";
+	/* prepare */
 	string confFileName = "conf.txt";
-	string varFileName = "jun_var.fits";
-	Image* dataImage = prepare( imageFileName, regionFileName, varFileName);
-	Conf *conList = new Conf(dataImage, confFileName);
+	map<string, string> mapConf = parseConfigure(confFileName);
+	Image* dataImage = new Image(mapConf["imageFileName"]);
+	dataImage->updateFilterImage(mapConf["regionFileName"]);
+	Image* varImage = new Image(mapConf["varFileName"]);
+	Conf *conList = new Conf(dataImage, mapConf);
+	dataImage->updateGridPointType();
+	//dataImage->writeFilterImage("filteredImage.fits");
+	sp_mat C = varImage->getVarMatrix(mapConf["regionFileName"]);
+	vec d =dataImage->getMatrixD();
 
-	vec d = dataImage->getMatrixD();
+	/* Now these are ready:
+		dataImag, conList, C, d
+	*/
 
-	//cout << d << endl;
+	// Build Matrix L;
+
+	/*vector<double> srcBriList(conList->length, 0);
+		for (int i=0; i<conList->length; ++i) {
+			srcBriList[i] = d[i];
+		}
 
 
 
+		conList->printConfList();
 
+		Image* srcImg = new Image(LM_PTMASS.srcPosXList, LM_PTMASS.srcPosYList, &srcBriList, conList->srcSize[0], conList->srcSize[1], conList->bitpix);
 
+		//srcImg.printImageInfo(1,1, 100, 100);
+		dataImage->writeToFile("test.fits");
+		srcImg->writeToFile("src.fits");
 
-	// output source Image:
+	*/
 
-	vector<double> srcX(conList->length, 0);
-	vector<double> srcY(conList->length, 0);
+	cout << "critRad \t chi2 \t" << endl;
+	for (int i=0; i<50; ++i) {
+		double critRad = 3.7+i*0.05;
+		double e = 0.01 + i*0.01;
+		double PA = i*3;
 
-	Model LM_PTMASS("PTMASS", 0, 0, 5.7, 0,0,0 );
+		Model *model = new Model("SIE", 0, 0, 6.16, 0.01, PA,0);
+		model->updatePosMapping(dataImage, conList);
 
-	map<pair<int, int>,int> posMap = LM_PTMASS.createPosMapping(dataImage, &srcX, &srcY, conList);
+		sp_mat L = model->buildLensMatrix(dataImage, conList);
 
-	vector<double> srcBriList(conList->length, 0);
-	for (int i=0; i<conList->length; ++i) {
-		srcBriList[i] = d[i];
+		double chi2 = getPenalty(&L , &d,  &d, &C);
+
+		cout << PA << "\t" << chi2 << endl;
+
 	}
-
-
-	conList->printConfList();
-
-	Image srcImg(srcX, srcY, &srcBriList, conList->srcSize[0], conList->srcSize[1], conList->bitpix);
-
-	//srcImg.printImageInfo(1,1, 100, 100);
-	dataImage->writeToFile("test.fits");
-	srcImg.writeToFile("src.fits");
-
-
 
 	return 0;
 

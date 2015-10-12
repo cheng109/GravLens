@@ -39,6 +39,8 @@ friend class Model;
 	vector<int> filterX;
 	vector<int> filterY;
 	vector<int> index;
+public:
+	vector<int> type;
 
 
 public:
@@ -49,6 +51,7 @@ public:
 	void getConstants(long *filterPixelNum, long* naxis1, long* naxis2, double *res, int* bit);
 	void printImageInfo(int x1, int y1, int x2, int y2);
 	void updateFilterImage(string regionFileName) ;
+	void updateGridPointType();
 	void writeFilterImage(string imgFileName);
 	void writeToFile(string imgFileName);
 

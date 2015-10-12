@@ -8,14 +8,14 @@ lenZ	0.4457
 
 
 ## Setting secondary parameters: 
-srcRes	0.03
-imgRes	0.04
+srcRes	0.3
+imgRes	0.3
 potRes	0.3
 
 ## Files
-#imageFileName	jun_image.fits
-#regionFileName	mask_l.reg
-
+imageFileName	jun_image.fits
+regionFileName	mask_new.reg
+varFileName	  jun_var.fits
 
 
 ## Source plane size

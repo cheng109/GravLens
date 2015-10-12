@@ -1,0 +1,7 @@
+obj/Image.o: Image.h
+obj/Model.o: Model.h commons.h Image.h
+obj/commons.o: commons.h Image.h
+obj/nr.o: nr.h nrutil.h nrtypes.h nrtypes_nr.h
+obj/nrtypes.o: nrtypes.h nrtypes_nr.h nrutil.h
+obj/nrtypes_nr.o: nrtypes_nr.h nrutil.h
+obj/nrutil.o: nrutil.h

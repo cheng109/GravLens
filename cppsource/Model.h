@@ -19,18 +19,26 @@ class Model {
 	string name;
 	double modelCenterX;
 	double modelCenterY;
-	double critR;
+	double critRad;
 	double e;
 	double q;
 	double PA;
 	double mass;
 
+	int length;
+public:
+	vector<double> srcPosXList;
+	vector<double> srcPosYList;
+
+	map<pair<int, int>,int> posMap;
+
 
 public:
 	Model();
 	Model(string name,double modelCenterX, double modelCenterY, double critR, double e, double PA, double mass);
-	void getDeflectionAngle(Conf* conList, int imgX, int imgY, double *srcX, double *srcY);
-	map<pair<int, int>,int> createPosMapping(Image* image, vector<double>* srcX,vector<double>* srcY,  Conf* conList);
+	vector<double> getDeflectionAngle(Conf* conList, int imgX, int imgY);
+	void updatePosMapping(Image* image,  Conf* conList);
+	sp_mat buildLensMatrix(Image* dataImage,  Conf* constList);
 	virtual ~Model();
 };
 

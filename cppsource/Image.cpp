@@ -25,6 +25,8 @@ Image::Image() {
 }
 
 
+
+
 Image::Image(vector<double> xpos, vector<double> ypos, vector<double> *briList, long naxis1, long naxis2, int bitpix):
 			naxis(2), naxis1(naxis1), naxis2(naxis2), bitpix(bitpix), data(naxis1*naxis2, 0) {
 
@@ -50,10 +52,10 @@ Image::Image(string imgFileName) {
 
 	fitsfile *fptr;       /* pointer to the FITS file, defined in fitsio.h */
 	int status,  nfound, anynull;
-	long naxes[2], fpixel, nbuffer,  ii;
+	long naxes[2], fpixel, nbuffer;
 
 
-	float datamin, datamax, nullval, buffer[buffsize];
+	float nullval, buffer[buffsize];
 	//char filename[]  = "atestfil.fit";     /* name of existing FITS file   */
 
 	status = 0;
@@ -137,7 +139,7 @@ void Image::printImageInfo(int x1, int y1, int x2, int y2) {
 
 void Image::writeFilterImage(string imgFileName) {
 	fitsfile *fptr;       /* pointer to the FITS file, defined in fitsio.h */
-	int status, ii, jj;
+	int status, ii;
 	long  fpixel;
 	long naxes[2] = { naxis1, naxis2 };   /* image is 300 pixels wide by 200 rows */
 	remove(imgFileName.c_str());               /* Delete old file if it already exists */
@@ -174,7 +176,7 @@ void Image::writeFilterImage(string imgFileName) {
 
 void Image::writeToFile(string imgFileName) {
 	fitsfile *fptr;       /* pointer to the FITS file, defined in fitsio.h */
-	int status, ii, jj;
+	int status, ii;
 	long  fpixel;
 
 	long naxes[2] = { naxis1, naxis2 };   /* image is 300 pixels wide by 200 rows */
@@ -232,6 +234,15 @@ vec Image::getMatrixD() {
 		d[i]= filterData[i];
 	}
 	return d;
+
+}
+void Image::updateGridPointType() {
+	for(int i=0; i<npixels; ++i) {
+		if((filterX[i]+filterY[i])%2==0)
+			type.push_back(0);
+		else
+			type.push_back(1);
+	}
 
 }
 
