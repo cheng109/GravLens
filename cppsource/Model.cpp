@@ -87,6 +87,56 @@ vector<double> Model::getDeflectionAngle(Conf* conList, int imgX, int imgY) {
 
 
 	}
+/*
+	if(name.compare("NFW")) {
+		 parameters:  mass scale, scale len, ellipticity, orientation_angle
+				{
+					real_t	fEllip,fCosTheta,fSinTheta,x1,y1,fPhi,fAngRadius,fTempResult,fCosPhi,fSinPhi,fScale;
+	                fX -= g_PixelResn*pLensComp->fParameter[4];
+	                fY -= g_PixelResn*pLensComp->fParameter[5];
+					 pre-calculate constants
+					fCosTheta = cos(pLensComp->fParameter[3]*M_PI/180);
+					fSinTheta = sin(pLensComp->fParameter[3]*M_PI/180);
+
+					fEllip = pLensComp->fParameter[2];
+					fScale = pLensComp->fParameter[1];
+
+	                if (fEllip >= 1.0 || fEllip < 0 || fScale < 0) {
+	                    iStatus = LM_BADPROJ;
+	                    break;
+	                }
+
+					 create elliptical co-ords still in angle units from rotated frame sky coords
+					x1 = sqrt(1.0 - fEllip)*(fX*fCosTheta + fY*fSinTheta);
+					y1 = sqrt(1.0 + fEllip)*(-fX*fSinTheta + fCosTheta*fY);
+					fPhi = atan2(y1,x1);
+
+					 angular radius is in dimensionless units
+					fAngRadius = sqrt(x1*x1 + y1*y1)/fScale;
+
+					if (fAngRadius > 0.0) {
+						real_t	deflx,defly;
+
+						fCosPhi = cos(fPhi);
+						fSinPhi = sin(fPhi);
+						 calculate mass. Note that one multiple of fAngRadius has been removed from denominator in next
+						 * line so that we don't need to mult again in the following two
+						fTempResult = pLensComp->fParameter[0]*fScale*lm_nfw_mass(fAngRadius)/(fAngRadius);
+						deflx = sqrt(1.-fEllip)*fTempResult*fCosPhi;
+						defly = sqrt(1.+fEllip)*fTempResult*fSinPhi;
+						*pDeltaX = (deflx*fCosTheta - defly*fSinTheta);
+						*pDeltaY = (deflx*fSinTheta + defly*fCosTheta);
+					}
+					else {
+
+						iStatus =LM_IGNORE_PROJ;
+
+						*pDeltaX = 0.0;
+						*pDeltaY = 0.0;
+					}
+				}
+
+	}*/
 
 
 	srcX = (pfX - pDeltaX)/conList->srcRes+conList->srcXCenter;
@@ -159,24 +209,10 @@ sp_mat Model::buildLensMatrix(Image* dataImage,  Conf* constList) {
 				L(i, iLeft) = w[0];
 				L(i, iUp)   = w[1];
 				L(i, iDown) = w[2];
-
 			}
-
-
 			else L(i, i) = 1;
-
-
-
 		}
-		//L(i, i) = 1;
-
 	}
-
-
-
-
-	//cout << L << endl;
-
 	return L;
 
 }

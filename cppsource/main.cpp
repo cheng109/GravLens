@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <map>
 #include "Image.h"
@@ -49,23 +50,37 @@ int main() {
 
 	*/
 
+
+	ofstream f;
+	f.open("list.txt");
 	cout << "critRad \t chi2 \t" << endl;
-	for (int i=0; i<50; ++i) {
-		double critRad = 3.7+i*0.05;
-		double e = 0.01 + i*0.01;
-		double PA = i*3;
+	double minChi2 = 10e6;
+	double minE  = 10e6;
+	double minCritR = 10e6;
+	for (int i=0; i<100; ++i) {
+		//for(int j=0; j<40; ++j) {
+			double critRad = 3.7+i*0.05;
+			double e = 0.2 ;//  + j*0.02;
+			double PA = 0 ; //2*j+30;
 
-		Model *model = new Model("SIE", 0, 0, 6.16, 0.01, PA,0);
-		model->updatePosMapping(dataImage, conList);
+			Model *model = new Model("SIE", 0, 0, critRad, e, PA,0);
+			model->updatePosMapping(dataImage, conList);
 
-		sp_mat L = model->buildLensMatrix(dataImage, conList);
+			sp_mat L = model->buildLensMatrix(dataImage, conList);
 
-		double chi2 = getPenalty(&L , &d,  &d, &C);
+			double chi2 = getPenalty(&L , &d,  &d, &C);
+			if(chi2 < minChi2)  {
+				minChi2 = chi2;
+				minE = e;
+				minCritR = critRad;
+			}
 
-		cout << PA << "\t" << chi2 << endl;
+			f <<e << "\t" <<  critRad << "\t" << chi2 << endl;
 
+		//}
 	}
-
+	cout <<minE << "\t" <<  minCritR << "\t" << minChi2 << endl;
+	f.close();
 	return 0;
 
 

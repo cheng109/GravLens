@@ -224,8 +224,9 @@ void Image::updateFilterImage(string regionFileName) {
 	for(int i=0; i<filterData.size(); ++i) {
 		index.push_back(i);
 	}
-	cout << "filterPixelNum" << "\t" << filterPixelNum<<endl;
+	//cout << "filterPixelNum" << "\t" << filterPixelNum<<endl;
 }
+
 
 vec Image::getMatrixD() {
 	vec d(filterPixelNum);
