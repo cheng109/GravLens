@@ -58,12 +58,9 @@ vector<double> Model::getDeflectionAngle(Conf* conList, int imgX, int imgY) {
 				if (fX == 0 && fY == 0)
 					pDeltaX = pDeltaY = critRad; // pLensComp->fParameter[0];
 
-
 				/* pre-calculate constants */
 				fCosTheta = cos(PA*M_PI/180);
 				fSinTheta = sin(PA*M_PI/180);
-
-
 				fq = 1-e;
                 if (fq>1.0) cout << "Axis ratio should be smaller than 1. " << endl;
                 if (fq==1.0) fq = 0.999;
@@ -71,8 +68,6 @@ vector<double> Model::getDeflectionAngle(Conf* conList, int imgX, int imgY) {
 				/* rotate reference frame to x-axis */
 				x1 = fX*fCosTheta + fY*fSinTheta;
 				y1 = -fX*fSinTheta + fY*fCosTheta;
-
-
 
 				root1mq = sqrt(1.0-fq*fq);
 				phi = sqrt(fq*fq*(fCore*fCore + x1*x1) + y1*y1);

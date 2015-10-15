@@ -45,8 +45,8 @@ int main() {
 	srcImg->writeToFile("src.fits");
 
 
-	Gnuplot gp;
-	gp<< "set terminal png\n";
+	//Gnuplot gp;
+	//gp<< "sin(x)/x\n";
 	vector<double> y;
 
 
@@ -58,7 +58,7 @@ int main() {
 			double critRad = 5.95+i*0.002;
 			double e = 0.0 ;//  + j*0.02;
 			double PA = 0 ; //2*j+30;
-			cout << i << endl;
+			//cout << i << endl;
 			Model *model = new Model("SIE", 0, 0, critRad, e, PA,0);
 			model->updatePosMapping(dataImage, conList);
 			sp_mat L = model->buildLensMatrix(dataImage, conList);
@@ -73,7 +73,7 @@ int main() {
 		//}
 	}
 	cout <<minE << "\t" <<  minCritR << "\t" << minChi2 << endl;
-	gp.send(y);
+	//gp.send(y);
 	conList->printConfList();
 	return 0;
 }
