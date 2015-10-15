@@ -20,6 +20,7 @@ class Conf;
 
 class Image {
 friend class Model;
+friend class Const;
 	string fileName;
 	int naxis;
 	long naxis1;
@@ -32,13 +33,14 @@ friend class Model;
 	//double imgXCenter;
 	//double imgYCenter;
 
-	size_t filterPixelNum;
+	long length;
 
 	vector<double> data;
-	vector<double> filterData;
-	vector<int> filterX;
-	vector<int> filterY;
-	vector<int> index;
+	vector<double> dataList;
+	vector<double> varList;
+	vector<int> xList;
+	vector<int> yList;
+	vector<int> iList;
 public:
 	vector<int> type;
 
@@ -54,9 +56,10 @@ public:
 	void updateGridPointType();
 	void writeFilterImage(string imgFileName);
 	void writeToFile(string imgFileName);
-
+	void updateVarList(double threshold, double backVar);
+	void updateVarList(string varFileName, string regionFileName);
 	vec getMatrixD();
-	sp_mat getVarMatrix(string regionFileName);
+	sp_mat getVarMatrix();
 	sp_mat getPSFMatrix(string psfFileName, long dim);
 	virtual ~Image();
 };

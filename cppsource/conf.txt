@@ -14,7 +14,7 @@ potRes	0.3
 
 ## Files
 imageFileName	jun_image.fits
-regionFileName	mask_new.reg
+regionFileName	mask.reg
 varFileName	  jun_var.fits
 
 

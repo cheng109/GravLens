@@ -30,7 +30,7 @@ Conf::Conf(Image* dataImage, map<string, string> confMap) {
 		double res;
 		dataImage->getConstants(&len, &naxis1, &naxis2, &res, &bit);
 		res = 0.3;
-
+		//cout << "len: " << len << endl;
 		imgSize[0]=naxis1; imgSize[1] =naxis2;
 		potSize[0]=naxis1; potSize[1] =naxis2;
 
@@ -39,7 +39,7 @@ Conf::Conf(Image* dataImage, map<string, string> confMap) {
 		imgYCenter = naxis2/2.0;
 		potXCenter = naxis1/2.0;
 		potYCenter = naxis2/2.0 ;
-		length = len;
+		length = len; //dataImage->length;
 		bitpix = bit;
 
 		srcRes = stod(confMap["srcRes"]);
@@ -58,7 +58,7 @@ Conf::Conf(Image* dataImage, map<string, string> confMap) {
 
 
 void Conf::printConfList(){
-		cout << "*********** ConfANTS *********" << endl;
+		cout << "*********** Constants *********" << endl;
 		cout << "srcSize:    " << srcSize[0] << ",\t"<< srcSize[1] << endl;
 		cout << "imgSize:    " << imgSize[0] << ",\t"<<imgSize[1]  << endl;
 		cout << "potSize:    " << potSize[0] << ",\t"<<potSize[1]  << endl;
@@ -195,13 +195,12 @@ vector<double> getTriWeight(double Ax, double Ay, double Bx, double By, double C
 
 }
 
-
-double getPenalty(sp_mat* M, vec* r, vec* d, sp_mat* C) {
+double getPenalty(sp_mat* M, vec* r, vec* d, sp_mat* invC) {
 
 	//  chi2 =  (M*r-d)^T(M*r-d)
 	//cout << *M << endl;
 	vec res = (*M)*(*r)-(*d);
-	vec chi2 =  res.t()*res;
+	vec chi2 =  res.t()*(*invC)*res;
 
 	return chi2(0,0);
 

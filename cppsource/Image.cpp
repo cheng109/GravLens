@@ -31,17 +31,17 @@ Image::Image(vector<double> xpos, vector<double> ypos, vector<double> *briList, 
 			naxis(2), naxis1(naxis1), naxis2(naxis2), bitpix(bitpix), data(naxis1*naxis2, 0) {
 
 	npixels = naxis1*naxis2;
-	long index=0, x, y;
+	long iList=0, x, y;
 	for(int i=0; i< briList->size(); ++i) {
 		x = nearbyint(xpos[i]);
 		y = nearbyint(ypos[i]);
 
 		if(x>0 && x< naxis1 && y>0 && y<naxis2) {
-			index = naxis1*y+x;
+			iList = naxis1*y+x;
 		}
-		//cout <<i << "\t" << xpos[i] << "\t" << ypos[i] << "\t" << index << "\t" << endl;
+		//cout <<i << "\t" << xpos[i] << "\t" << ypos[i] << "\t" << iList << "\t" << endl;
 
-		data[index] += briList->at(i);
+		data[iList] += briList->at(i);
 			
 	}
 
@@ -98,9 +98,9 @@ Image::Image(string imgFileName) {
 
 
 
-void Image::getConstants(long *length, long* naxis1, long* naxis2, double *res, int *bit){
-
-	*length=this->filterPixelNum;
+void Image::getConstants(long *len, long* naxis1, long* naxis2, double *res, int *bit){
+	cout << "length " << length << endl;
+	*len=this->length;
 	*naxis1 = this->naxis1;
 	*naxis2 = this->naxis2;
 	*res = this->res;
@@ -158,9 +158,9 @@ void Image::writeFilterImage(string imgFileName) {
 	}
 	for( ii=1; ii<naxis2; ii++ )
 		array[ii] = array[ii-1] + naxis1;
-	cout << filterData.size() << endl;
-	for (int i=0; i<filterData.size();  ++i) {
-		array[filterY[i]][filterX[i]] = filterData[i];
+	cout << dataList.size() << endl;
+	for (int i=0; i<dataList.size();  ++i) {
+		array[yList[i]][xList[i]] = dataList[i];
 	}
 	fpixel = 1;                               /* first pixel to write      */
 	if (fits_write_img(fptr, TDOUBLE, fpixel, npixels, array[0], &status))
@@ -214,32 +214,32 @@ void Image::updateFilterImage(string regionFileName) {
 		for (int y=0; y<naxis2; ++y) {
 		  if(pnpoly(lenRegionList, &xpos, &ypos,  double(x+0.5) ,  double(y+0.5))) {
 
-				filterData.push_back(data[naxis1*y+x]);
-				filterX.push_back(x+1);
-				filterY.push_back(y+1);
+				dataList.push_back(data[naxis1*y+x]);
+				xList.push_back(x+1);
+				yList.push_back(y+1);
 			}
 		}
 	}
-	filterPixelNum = filterData.size() ;
-	for(int i=0; i<filterData.size(); ++i) {
-		index.push_back(i);
+
+	length = dataList.size() ;
+	for(int i=0; i<dataList.size(); ++i) {
+		iList.push_back(i);
 	}
-	//cout << "filterPixelNum" << "\t" << filterPixelNum<<endl;
+	//cout << "length" << "\t" << length<<endl;
 }
 
 
 vec Image::getMatrixD() {
-	vec d(filterPixelNum);
-	for(int i=0; i<filterPixelNum; ++i) {
-
-		d[i]= filterData[i];
+	vec d(length);
+	for(int i=0; i<length; ++i) {
+		d[i]= dataList[i];
 	}
 	return d;
 
 }
 void Image::updateGridPointType() {
-	for(int i=0; i<npixels; ++i) {
-		if((filterX[i]+filterY[i])%2==0)
+	for(int i=0; i<length; ++i) {
+		if((xList[i]+yList[i])%2==0)
 			type.push_back(0);
 		else
 			type.push_back(1);
@@ -247,22 +247,37 @@ void Image::updateGridPointType() {
 
 }
 
-sp_mat Image::getVarMatrix(string regionFileName)  {
+sp_mat Image::getVarMatrix()  {
 
-	this->updateFilterImage(regionFileName);
-	long n= this->filterPixelNum;
+	//this->updateFilterImage(regionFileName);
+	long n= length;
 	//n = 100;
-	sp_mat C = speye<sp_mat>(n, n);
-/*
+	sp_mat invC = speye<sp_mat>(n, n);
 	for(int i=0; i<n; ++i) {
-		C(i,i)=this->filterData[i];
-
+		invC(i,i)=varList[i];
 	}
-*/
-
-	return C;
-
+	return invC;
 }
+
+void Image::updateVarList(double threshold, double backVar) {
+	for(int i=0; i<length; ++i) {
+		if(dataList[i]<threshold) {
+			varList.push_back(backVar);
+		}
+		else
+			varList.push_back(dataList[i]);
+	}
+}
+
+void Image::updateVarList(string varFileName, string regionFileName) {
+	Image varImage(varFileName);
+	varImage.updateFilterImage(regionFileName);
+	for(int i=0; i<length; ++i) {
+		varList.push_back(dataList[i]);
+	}
+}
+
+
 
 
 Image::~Image() {
