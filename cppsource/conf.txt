@@ -8,13 +8,13 @@ lenZ	0.4457
 
 
 ## Setting secondary parameters: 
-srcRes	0.3
-imgRes	0.3
+srcRes	0.03
+imgRes	0.03
 potRes	0.3
 
 ## Files
 imageFileName	jun_image.fits
-regionFileName	mask.reg
+regionFileName	tiny.reg
 varFileName	  jun_var.fits
 
 

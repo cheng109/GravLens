@@ -11,7 +11,7 @@
 #include <map>
 using namespace std;
 using namespace arma;
-#include "gnuplot-iostream.h"
+//#include "gnuplot-iostream.h"
 
 int main() {
 
@@ -37,7 +37,11 @@ int main() {
 	for (int i=0; i<conList->length; ++i) {
 		srcBriList[i] = d[i];
 	}
-	Model *model = new Model("PTMASS", 0, 0, 6.025, 0.0, 0.0,0.0);
+
+	ParaList para("PTMASS", 0, 0, 5.69, 0.0, 0.0, 0.0, 0.0);
+
+
+	Model *model = new Model(conList, para);
 	model->updatePosMapping(dataImage, conList);
 	Image* srcImg = new Image(model->srcPosXList, model->srcPosYList, &srcBriList, conList->srcSize[0], conList->srcSize[1], conList->bitpix);
 	//srcImg.printImageInfo(1,1, 100, 100);
@@ -45,21 +49,19 @@ int main() {
 	srcImg->writeToFile("src.fits");
 
 
-	//Gnuplot gp;
-	//gp<< "sin(x)/x\n";
-	vector<double> y;
+	model->Logging(dataImage, conList, "log.txt");
 
-
+/*
 	double minChi2 = 10e6;
 	double minE  = 10e6;
 	double minCritR = 10e6;
-	for (int i=0; i<100; ++i) {
+	for (int i=0; i<1; ++i) {
 		//for(int j=0; j<40; ++j) {
-			double critRad = 5.95+i*0.002;
+			double critRad = 3.95+i*0.05;
 			double e = 0.0 ;//  + j*0.02;
 			double PA = 0 ; //2*j+30;
 			//cout << i << endl;
-			Model *model = new Model("SIE", 0, 0, critRad, e, PA,0);
+			Model *model = new Model(conList, "PTMASS", 0, 0, critRad, e, PA,0);
 			model->updatePosMapping(dataImage, conList);
 			sp_mat L = model->buildLensMatrix(dataImage, conList);
 			double chi2 = getPenalty(&L , &d,  &d, &invC);
@@ -68,13 +70,13 @@ int main() {
 				minE = e;
 				minCritR = critRad;
 			}
-			y.push_back(chi2);
-			//f <<e << "\t" <<  critRad << "\t" << chi2 << endl;
+			//y.push_back(chi2);
+			cout <<e << "\t" <<  critRad << "\t" << chi2 << endl;
 		//}
 	}
 	cout <<minE << "\t" <<  minCritR << "\t" << minChi2 << endl;
 	//gp.send(y);
-	conList->printConfList();
+	conList->printConfList();*/
 	return 0;
 }
 

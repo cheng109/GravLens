@@ -22,7 +22,6 @@ using namespace arma;
 using namespace std;
 
 
-
 Conf::Conf(Image* dataImage, map<string, string> confMap) {
 		//imgSize[0] = dataImage->
 		long naxis1, naxis2, len ;
@@ -51,11 +50,7 @@ Conf::Conf(Image* dataImage, map<string, string> confMap) {
 
 		srcXCenter = srcSize[0]/2.0;
 		srcYCenter = srcSize[1]/2.0;
-
-
 }
-
-
 
 void Conf::printConfList(){
 		cout << "*********** Constants *********" << endl;
@@ -103,9 +98,6 @@ int parseReagionFile(string regionFileName, vector<double> *xpos, vector<double>
 	ifstream regionFile(regionFileName.c_str());
 	string line, token;
 	size_t pos=0;
-	//vector<double> xpos;
-	//vector<double> ypos;
-
 	while (getline(regionFile, line)) {
 		if (line[0]!='#' && line.substr(0, 6)!="global" && line.substr(0, 5)!="image") {
 			size_t pos1 = line.find_first_of("(", pos);
@@ -149,9 +141,7 @@ map<string, string> parseConfigure(string confFileName) {
 			}
 		}
 	}
-
 	return confMap;
-
 }
 
 
@@ -203,7 +193,75 @@ double getPenalty(sp_mat* M, vec* r, vec* d, sp_mat* invC) {
 	vec chi2 =  res.t()*(*invC)*res;
 
 	return chi2(0,0);
+}
 
+
+void getLinearInterpolate(double Ax, double Ay, double Bx, double By, double Cx, double Cy, 
+	double *Px, double *Py, char direction) {
+	double a=0, b=0; 
+	if(abs(Ax-By)<10e-8)  {
+		*Px = 0.5*(Ax+Bx); 
+		*Py = Cy;
+	}	
+	else {
+		a = (Ay-By)/(Ax-Bx); 
+		b = Ay-a*Ax; 
+		if(direction=='x') {
+			*Px = (Cy-b)/a; 
+			*Py = Cy; 
+		}
+		else if(direction=='y') {
+			*Px = Cx; 
+			*Py = a*Cx+b; 
+		}
+		else
+			cout << "Please Point direction X or Y ! " << endl;
+	}
+}
+
+
+vector<double> getPentWeigth(double Ax, double Ay, double Bx, double By, double Cx, double Cy, double Dx, double Dy, 
+	double Ex, double Ey) {
+	double Qx, Qy, Px, Py, Mx, My, Nx, Ny; //wAx, wAy, wBx, wBy, wCx, wCy, wDx, wDy, wEx, wEy;
+	vector<double> pentWeight; 
+
+	getLinearInterpolate(Ax, Ay, Bx, By, Cx, Cy, &Qx, &Qy, 'x'); 
+	getLinearInterpolate(Dx, Dy, Ex, Ey, Cx, Cy, &Px, &Py, 'x'); 
+
+	getLinearInterpolate(Bx, By, Ex, Ey, Cx, Cy, &Mx, &My, 'x'); 
+	getLinearInterpolate(Ax, Ay, Dx, Dy, Cx, Cy, &Nx, &Ny, 'x'); 
+
+	double dCQ_AB = dist(Cx, Cy, Qx, Qy)*dist(Ax, Ay, Bx, By); 
+	double dCP_DE = dist(Cx, Cy, Px, Py)*dist(Dx, Dy, Ex, Ey); 
+	//double dAB = ; 
+
+	pentWeight.push_back(dist(Qx, Qy, Bx, By)/dCQ_AB);    // wAx
+	pentWeight.push_back(dist(Qx, Qy, Ax, Ay)/dCQ_AB); 		// wBx
+	pentWeight.push_back(-(1/dist(Cx, Cy, Px, Py)+1/dist(Cx, Cy, Qx, Qy)));  //wCx
+	pentWeight.push_back(dist(Px, Py, Ex, Ey)/dCP_DE);   //wDx 
+	pentWeight.push_back(dist(Px, Py, Dx, Dy)/dCP_DE); 			//wEx
+
+	double dCN_AD = dist(Cx, Cy, Nx, Ny)*dist(Ax, Ay, Dx, Dy); 
+	double dCM_BE = dist(Cx, Cy, Mx, My)*dist(Bx, By, Ex, Ey); 
+
+	pentWeight.push_back(dist(Nx, Ny, Dx, Dy)/dCN_AD);   //wAy 
+	pentWeight.push_back(dist(Mx, My, Ex, Ey)/dCM_BE);   //wBy 
+	pentWeight.push_back(-(1/dist(Cx,Cy, Nx, Ny)+1/dist(Cx,Cy,Mx, My)));  //wCy
+	pentWeight.push_back(dist(Ax, Ay, Nx, Ny)/dCN_AD);    //wDy
+	pentWeight.push_back(dist(Bx, By, Mx, My)/dCM_BE);    // wEy
+
+	return pentWeight; 
+
+}
+
+
+normVec getNormVector(Point A, Point B, Point C) {
+	normVec norm; 
+	norm.n0 = (C.y-B.y)*(B.z-A.z)-(C.z-B.z)*(B.y-A.y); 
+	norm.n1 = (C.z-B.z)*(B.x-A.x)-(C.x-B.x)*(B.z-A.z); 
+	norm.n2 = (C.x-B.x)*(B.y-A.y)-(C.y-B.y)*(B.x-A.x); 
+
+	return norm;
 }
 
 

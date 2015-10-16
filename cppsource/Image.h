@@ -29,9 +29,6 @@ friend class Const;
 
 	int bitpix;
 	double res;
-	//bool filtered=0;
-	//double imgXCenter;
-	//double imgYCenter;
 
 	long length;
 

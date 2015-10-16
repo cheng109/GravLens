@@ -18,6 +18,21 @@
 using namespace std;
 using namespace arma;
 
+struct normVec{ 
+	double n0;  
+	double n1; 
+	double n2; 
+	normVec() {};
+	normVec(double n0, double n1, double n2):n0(n0), n1(n1), n2(n2) {} ;
+}; 
+
+struct Point{
+	double x; 
+	double y; 
+	double z;
+	Point(double a, double b, double c):x(a), y(b), z(c) {};
+}; 
+
 class Conf{
 public:
 	size_t srcSize[2];
@@ -53,5 +68,10 @@ int parseReagionFile(string regionFileName, vector<double> *xpos, vector<double>
 map<string, string> parseConfigure(string confFileName) ;
 double getPenalty(sp_mat* M, vec* r, vec* d, sp_mat* C);
 double lm_arctanh(double x);
+normVec getNormVector(Point A, Point B, Point C);
+void getLinearInterpolate(double Ax, double Ay, double Bx, double By, double Cx, double Cy,	double *Px, double *Py, char direction);
+vector<double> getPentWeigth(double Ax, double Ay, double Bx, double By, double Cx, double Cy, double Dx, double Dy,
+	double Ex, double Ey);
+
 
 #endif

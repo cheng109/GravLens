@@ -278,8 +278,6 @@ void Image::updateVarList(string varFileName, string regionFileName) {
 }
 
 
-
-
 Image::~Image() {
 	// TODO Auto-generated destructor stub
 }

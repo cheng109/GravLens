@@ -16,22 +16,30 @@
 using namespace std;
 using namespace arma;
 
+
+
 Model::Model() {
 	// TODO Auto-generated constructor stub
 
 }
 
 
-Model::Model(string name, double modelCenterX, double modelCenterY, double critRad, double e,  double PA, double mass):
-		name(name), modelCenterX(modelCenterX), modelCenterY(modelCenterY), critRad(critRad), e(e), PA(PA), mass(mass) {
-
+Model::Model(Conf* conList, ParaList param): param(param) {
+	// initial s;
+	normVec n(0, 0, 0);
+	vector<normVec> temp;
+	temp.push_back(n);
+	for(int i=0; i<conList->length; ++i) {
+		s.push_back(0);
+		normV.push_back(temp);
+	}
 }
 
 
 
 vector<double> Model::getDeflectionAngle(Conf* conList, int imgX, int imgY) {
-	double fX = (imgX -conList->imgXCenter-modelCenterX)*conList->imgRes;   // Model center frame
-	double fY = (imgY -conList->imgYCenter-modelCenterY)*conList->imgRes;
+	double fX = (imgX -conList->imgXCenter-param.centerX)*conList->imgRes;   // Model center frame
+	double fY = (imgY -conList->imgYCenter-param.centerY)*conList->imgRes;
 
 	double pfX = (imgX-conList->imgXCenter)*conList->imgRes; 			// image center frame;
 	double pfY = (imgY-conList->imgYCenter)*conList->imgRes;
@@ -41,15 +49,17 @@ vector<double> Model::getDeflectionAngle(Conf* conList, int imgX, int imgY) {
 	vector<double> srcPos;
 	double fDenom, srcX, srcY;
 
-	if(name.compare("PTMASS")==0) {
+
+
+	if(param.name.compare("PTMASS")==0) {
 		fDenom = fX*fX+fY*fY;
-		double fMult = critRad*critRad/fDenom;
+		double fMult = param.critRad*param.critRad/fDenom;
 		pDeltaX = fX*fMult;
 		pDeltaY = fY*fMult;
 
 	}
 
-	if(name.compare("SIE")==0) {
+	/*if(name.compare("SIE")==0) {
 
 		double phi,root1mq,fq,fac,fCore=0,fCosTheta,fSinTheta,x1,y1,deltax1,deltay1;
 			//	fX -= g_PixelResn*pLensComp->fParameter[3];
@@ -58,20 +68,20 @@ vector<double> Model::getDeflectionAngle(Conf* conList, int imgX, int imgY) {
 				if (fX == 0 && fY == 0)
 					pDeltaX = pDeltaY = critRad; // pLensComp->fParameter[0];
 
-				/* pre-calculate constants */
+				 pre-calculate constants
 				fCosTheta = cos(PA*M_PI/180);
 				fSinTheta = sin(PA*M_PI/180);
 				fq = 1-e;
                 if (fq>1.0) cout << "Axis ratio should be smaller than 1. " << endl;
                 if (fq==1.0) fq = 0.999;
 
-				/* rotate reference frame to x-axis */
+				 rotate reference frame to x-axis
 				x1 = fX*fCosTheta + fY*fSinTheta;
 				y1 = -fX*fSinTheta + fY*fCosTheta;
 
 				root1mq = sqrt(1.0-fq*fq);
 				phi = sqrt(fq*fq*(fCore*fCore + x1*x1) + y1*y1);
-				/* use sqrt(fq) here not fq. This presevers scale of Einstein Radius */
+				 use sqrt(fq) here not fq. This presevers scale of Einstein Radius
 				fac = critRad*sqrt(fq)/root1mq;
 				//cout<< fac << endl;
 				deltax1 = fac*atan(root1mq*x1/(phi + fCore));
@@ -82,7 +92,7 @@ vector<double> Model::getDeflectionAngle(Conf* conList, int imgX, int imgY) {
 				pDeltaY = deltay1*fCosTheta + deltax1*fSinTheta;
 
 
-	}
+	}*/
 /*
 	if(name.compare("NFW")) {
 		 parameters:  mass scale, scale len, ellipticity, orientation_angle
@@ -187,13 +197,20 @@ sp_mat Model::buildLensMatrix(Image* dataImage,  Conf* constList) {
 			up    = posMap.find(make_pair(dataImage->xList[i], dataImage->yList[i]+1));
 			down  = posMap.find(make_pair(dataImage->xList[i], dataImage->yList[i]-1));
 
-			//counter = ((left!=posMap.end()) + (up!=posMap.end()) + (down!=posMap.end()) + (right!=posMap.end()));
-			//cout << counter << endl;
+
 
 			if(left!=posMap.end() && up!=posMap.end() && down!=posMap.end()) {
+
+
 				int iLeft = left->second;
 				int iUp   = up  ->second;
 				int iDown = down->second;
+
+				Point A(srcPosXList[iLeft], srcPosYList[iLeft], s[iLeft]);
+				Point B(srcPosXList[iUp], srcPosYList[iUp], s[iUp]);
+				Point C(srcPosXList[iDown], srcPosYList[iDown], s[iDown]);
+				Point P(srcPosXList[i], srcPosYList[i], s[i]);
+
 
 				Ax = srcPosXList[iLeft];
 				Ay = srcPosYList[iLeft];
@@ -209,10 +226,50 @@ sp_mat Model::buildLensMatrix(Image* dataImage,  Conf* constList) {
 				L(i, iLeft) = w[0];
 				L(i, iUp)   = w[1];
 				L(i, iDown) = w[2];
+
+				normV[i].push_back(getNormVector(A, B, C));
 			}
 			else L(i, i) = 1;
 		}
 	}
 	return L;
+}
+
+
+void Model::updateNorm(Image* dataImage) {
+	for (int i=0; i<length; ++i) {
+		if(dataImage->type[i]==1) {
+
+
+		}
+
+		if(dataImage->type[i]==0) {
+
+
+		}
+	}
+}
+
+void Model::Logging(Image* dataImage, Conf* conList, string outFileName) {
+	ofstream f(outFileName);
+	string tab = "\t";
+	string entry;
+	f << "#1 index\n" << "#2 imgX\n" << "#3 imgY\n" << "#4 imgBri\n";
+	f << "#5 srcX\n"  << "#6 srcY\n";
+	for(int i=0; i<conList->length; ++i) {
+		entry =  to_string(dataImage->iList[i]) + "\t"
+				+to_string(dataImage->xList[i]) + "\t"
+				+to_string(dataImage->yList[i]) + "\t"
+				+to_string(dataImage->dataList[i]) + "\t"
+				+to_string(srcPosXList[i]) + "\t"
+				+to_string(srcPosYList[i]) + "\t"
+				+to_string(posMap[make_pair(dataImage->xList[i], dataImage->yList[i])]) + "\t";
+
+		f << entry << endl ;
+	}
+
+	f.close();
+
 
 }
+
