@@ -20,6 +20,8 @@ int main() {
 	map<string, string> mapConf = parseConfigure(confFileName);
 	Image* dataImage = new Image(mapConf["imageFileName"]);
 	dataImage->updateFilterImage(mapConf["regionFileName"]);
+
+
 	dataImage->updateVarList(2.2, 0.1);
 	sp_mat invC = dataImage->getVarMatrix();
 
@@ -47,9 +49,27 @@ int main() {
 	//srcImg.printImageInfo(1,1, 100, 100);
 	dataImage->writeToFile("test.fits");
 	srcImg->writeToFile("src.fits");
+	model->s = srcBriList;
+	sp_mat L = model->buildLensMatrix(dataImage, conList);
+	//cout << L << endl ;
 
-
+	model->updateGradient(dataImage);
 	model->Logging(dataImage, conList, "log.txt");
+
+
+
+	// Test get vector Norm:
+
+
+	/*Point A(0, 0, -1.0e10);
+	Point B(1, 0, 1.0e10 );
+	Point C(0, 1, 1.0e10);
+
+	normVec n =  getNormVector( A,  B,  C);
+	cout << n.n0 << endl;
+	cout << n.n1 << endl;
+	cout << n.n2 << endl;*/
+
 
 /*
 	double minChi2 = 10e6;

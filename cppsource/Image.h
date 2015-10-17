@@ -58,6 +58,8 @@ public:
 	vec getMatrixD();
 	sp_mat getVarMatrix();
 	sp_mat getPSFMatrix(string psfFileName, long dim);
+	void erasePixel(int index);
+
 	virtual ~Image();
 };
 

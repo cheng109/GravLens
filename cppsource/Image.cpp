@@ -24,9 +24,6 @@ Image::Image() {
 
 }
 
-
-
-
 Image::Image(vector<double> xpos, vector<double> ypos, vector<double> *briList, long naxis1, long naxis2, int bitpix):
 			naxis(2), naxis1(naxis1), naxis2(naxis2), bitpix(bitpix), data(naxis1*naxis2, 0) {
 
@@ -276,6 +273,22 @@ void Image::updateVarList(string varFileName, string regionFileName) {
 		varList.push_back(dataList[i]);
 	}
 }
+
+/*
+
+void Image::erasePixel(int index) {
+
+	dataList.erase(dataList.begin()+index);
+	varList.erase(varList.begin()+index);
+	xList.erase(xList.begin()+index);
+	yList.erase(yList.begin()+index);
+
+	type.erase(type.begin()+index);
+	iList.erase(iList.begin()+index);
+	length = length -1;
+
+}
+*/
 
 
 Image::~Image() {

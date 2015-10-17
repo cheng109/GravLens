@@ -24,14 +24,30 @@ Model::Model() {
 }
 
 
-Model::Model(Conf* conList, ParaList param): param(param) {
+Model::Model(Conf* conList, ParaList param):
+		param(param), length(conList->length),
+		L(length,length),
+		Ds(length, 2*length),
+		Dphi(2*length,length),
+		Hs1(length, length),
+		Hs2(length, length),
+		Hphi(length, length),
+		HtH(length, length),
+		HphiH(length, length),
+		RtR(2*length, 2*length) {
 	// initial s;
+
 	normVec n(0, 0, 0);
 	vector<normVec> temp;
 	temp.push_back(n);
+	//sp_mat L(constList->length,constList->length);
+	//normV.resize(conList->length);
+
 	for(int i=0; i<conList->length; ++i) {
 		s.push_back(0);
 		normV.push_back(temp);
+		dSy1.push_back(0);
+		dSy2.push_back(0);
 	}
 }
 
@@ -175,7 +191,6 @@ void Model::updatePosMapping(Image* image, Conf* conList) {
 		srcPos = getDeflectionAngle(conList,imgX, imgY);
 		srcPosXList.push_back(srcPos[0]);
 		srcPosYList.push_back(srcPos[1]);
-
 		posMap[make_pair(imgX, imgY)] = i;
 	}
 
@@ -183,25 +198,45 @@ void Model::updatePosMapping(Image* image, Conf* conList) {
 
 sp_mat Model::buildLensMatrix(Image* dataImage,  Conf* constList) {
 
-	sp_mat L(constList->length,constList->length);
+
 	map<pair<int, int>,int>::iterator left, right, up, down;
-	double Ax=0.0, Ay=0.0, Bx=0.0, By=0.0, Cx=0.0, Cy=0.0, Px=0.0, Py=0.0;
 	vector<double> w;
 	//int counter;
 	for (int i=0; i<constList->length; ++i) {
-		if(dataImage->type[i]==1)
+		left  = posMap.find(make_pair(dataImage->xList[i]-1, dataImage->yList[i]));
+		right = posMap.find(make_pair(dataImage->xList[i]+1, dataImage->yList[i]));
+		up    = posMap.find(make_pair(dataImage->xList[i], dataImage->yList[i]+1));
+		down  = posMap.find(make_pair(dataImage->xList[i], dataImage->yList[i]-1));
+
+		if(left!=posMap.end() && up!=posMap.end() && down!=posMap.end() && right!=posMap.end()) {
+			int iLeft = left->second;
+			int iUp   = up  ->second;
+			int iDown = down->second;
+			int iRight= right->second;
+			Point A(srcPosXList[iLeft], srcPosYList[iLeft], s[iLeft]);
+			Point B(srcPosXList[iUp], srcPosYList[iUp], s[iUp]);
+			Point C(srcPosXList[i], srcPosYList[i], s[i]);
+			Point D(srcPosXList[iDown], srcPosYList[iDown], s[iDown]);
+			Point E(srcPosXList[iRight], srcPosYList[iRight], s[iRight]);
+			vector<double> w = getPentWeigth(A, B, C, D, E);
+			Hs1(i, iLeft) 	= w[0];
+			Hs1(i, iUp) 	= w[1];
+			Hs1(i, i) 		= w[2];
+			Hs1(i, iDown) 	= w[3];
+			Hs1(i, iRight) 	= w[4];
+
+			Hs2(i, iLeft) 	= w[5];
+			Hs2(i, iUp) 	= w[6];
+			Hs2(i, i) 		= w[7];
+			Hs2(i, iDown) 	= w[8];
+			Hs2(i, iRight) 	= w[9];
+		}
+		if(dataImage->type[i]==1) {
 			L(i,i)=1;
+
+		}
 		if(dataImage->type[i]==0) {
-			left  = posMap.find(make_pair(dataImage->xList[i]-1, dataImage->yList[i]));
-			right = posMap.find(make_pair(dataImage->xList[i]+1, dataImage->yList[i]));
-			up    = posMap.find(make_pair(dataImage->xList[i], dataImage->yList[i]+1));
-			down  = posMap.find(make_pair(dataImage->xList[i], dataImage->yList[i]-1));
-
-
-
 			if(left!=posMap.end() && up!=posMap.end() && down!=posMap.end()) {
-
-
 				int iLeft = left->second;
 				int iUp   = up  ->second;
 				int iDown = down->second;
@@ -211,43 +246,71 @@ sp_mat Model::buildLensMatrix(Image* dataImage,  Conf* constList) {
 				Point C(srcPosXList[iDown], srcPosYList[iDown], s[iDown]);
 				Point P(srcPosXList[i], srcPosYList[i], s[i]);
 
-
-				Ax = srcPosXList[iLeft];
-				Ay = srcPosYList[iLeft];
-				Bx = srcPosXList[iUp];
-				By = srcPosYList[iUp];
-				Cx = srcPosXList[iDown];
-				Cy = srcPosYList[iDown];
-				Px = srcPosXList[i];
-				Py = srcPosYList[i];
-
-				w = getTriWeight( Ax,  Ay,  Bx,  By,  Cx,  Cy,  Px,  Py);
-
+				w = getTriWeight( A, B, C, P);
 				L(i, iLeft) = w[0];
 				L(i, iUp)   = w[1];
 				L(i, iDown) = w[2];
+				normVec n = getNormVector(A, B, C);
+				normV[iLeft].push_back(n);
+				normV[iUp].push_back(n);
+				normV[iDown].push_back(n);
 
-				normV[i].push_back(getNormVector(A, B, C));
 			}
 			else L(i, i) = 1;
 		}
 	}
+	HtH = Hs1.t()*Hs1 + Hs2.t()*Hs2;
+	for(sp_mat::iterator iter=HtH.begin(); iter!=HtH.end(); ++iter) {
+
+		RtR(iter.row(), iter.col()) = *iter;
+	}
+	mat RR(RtR);
+	cout << RR << endl;
 	return L;
 }
 
-
-void Model::updateNorm(Image* dataImage) {
+void Model::updateGradient(Image* dataImage) {
+	vec vSy1(length);  vSy1.fill(0);
+	vec vSy2(length);  vSy2.fill(0);
 	for (int i=0; i<length; ++i) {
 		if(dataImage->type[i]==1) {
-
-
-		}
-
-		if(dataImage->type[i]==0) {
-
-
+			normVec mean =  meanNormVector(normV[i]);
+			if (mean.n2==0) {
+				vSy1[i] = 0;
+				vSy2[i] = 0;
+			}
+			else {
+				vSy1[i] = -mean.n0/mean.n2;
+				vSy2[i] = -mean.n1/mean.n2;
+			}
 		}
 	}
+	vSy1 = L*vSy1;
+	vSy2 = L*vSy2;
+	//update Ds and Dphi
+	for(int i=0; i<length; ++i){
+		for(int j=0; j<2*length; ++j) {
+			Ds(i, 2*i+0) = vSy1(i);
+			Ds(i, 2*i+1) = vSy2(i);
+		}
+	}
+
+	sp_mat extension = -1*Ds*Dphi;
+	mat phi(length, 1);
+	M = join_rows(L, extension);
+	mat sMatrix(length, 1);
+	for(int i=0; i<length; ++i) {
+		sMatrix(i,0) = s[i];
+
+	}
+	r = join_cols(sMatrix,  phi);
+
+}
+
+double Model::getPenalty() {
+
+
+	return 0;
 }
 
 void Model::Logging(Image* dataImage, Conf* conList, string outFileName) {
@@ -255,7 +318,7 @@ void Model::Logging(Image* dataImage, Conf* conList, string outFileName) {
 	string tab = "\t";
 	string entry;
 	f << "#1 index\n" << "#2 imgX\n" << "#3 imgY\n" << "#4 imgBri\n";
-	f << "#5 srcX\n"  << "#6 srcY\n";
+	f << "#5 srcX\n"  << "#6 srcY\n" << "#7 mapIndex" << "#8 ";
 	for(int i=0; i<conList->length; ++i) {
 		entry =  to_string(dataImage->iList[i]) + "\t"
 				+to_string(dataImage->xList[i]) + "\t"
@@ -263,7 +326,8 @@ void Model::Logging(Image* dataImage, Conf* conList, string outFileName) {
 				+to_string(dataImage->dataList[i]) + "\t"
 				+to_string(srcPosXList[i]) + "\t"
 				+to_string(srcPosYList[i]) + "\t"
-				+to_string(posMap[make_pair(dataImage->xList[i], dataImage->yList[i])]) + "\t";
+				+to_string(posMap[make_pair(dataImage->xList[i], dataImage->yList[i])]) + "\t" ;  //  Matched position
+				//+to_string()
 
 		f << entry << endl ;
 	}

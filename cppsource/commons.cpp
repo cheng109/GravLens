@@ -144,20 +144,18 @@ map<string, string> parseConfigure(string confFileName) {
 	return confMap;
 }
 
-
-inline double dist(double Ax, double Ay, double Bx, double By) {
-	return sqrt((Bx-Ax)*(Bx-Ax)+(By-Ay)*(By-Ay));
+inline double dist(Point A, Point B) {
+	return sqrt((B.x-A.x)*(B.x-A.x)+(B.y-A.y)*(B.y-A.y));
 }
 
-inline double area(double Ax, double Ay, double Bx, double By, double Cx, double Cy) {
-	double side_a = dist(Bx, By, Cx, Cy);
-	double side_b = dist(Ax, Ay, Cx, Cy);
-	double side_c = dist(Ax, Ay, Bx, By);
+inline double area(Point A, Point B, Point C) {
+	double side_a = dist(B, C);
+	double side_b = dist(A, C);
+	double side_c = dist(A, B);
 
 	double s = 0.5*(side_a + side_b + side_c);
 	return sqrt(s*(s-side_a)*(s-side_b)*(s-side_c));
 }
-
 
 double lm_arctanh(double x) {
 	if (x < -1 || x > 1.) {
@@ -167,22 +165,17 @@ double lm_arctanh(double x) {
 	return log(sqrt((1.+x)/(1.-x)));
 }
 
-
-
-vector<double> getTriWeight(double Ax, double Ay, double Bx, double By, double Cx, double Cy, double Px, double Py) {
-	double areaA = area(Px, Py, Bx, By, Cx, Cy);
-	double areaB = area(Px, Py, Ax, Ay, Cx, Cy);
-	double areaC = area(Px, Py, Ax, Ay, Bx, By);
+vector<double> getTriWeight(Point A, Point B, Point C, Point P) {
+	double areaA = area(P, B, C);
+	double areaB = area(P, A, C);
+	double areaC = area(P, A, B);
 	double S = areaA + areaB + areaC;
 
 	vector<double> w;
 	w.push_back(areaA/S);
 	w.push_back(areaB/S);
 	w.push_back(areaC/S);
-
 	return w;
-
-
 }
 
 double getPenalty(sp_mat* M, vec* r, vec* d, sp_mat* invC) {
@@ -196,63 +189,71 @@ double getPenalty(sp_mat* M, vec* r, vec* d, sp_mat* invC) {
 }
 
 
-void getLinearInterpolate(double Ax, double Ay, double Bx, double By, double Cx, double Cy, 
-	double *Px, double *Py, char direction) {
+void getLinearInterpolate(Point A, Point B,  Point C,  Point *P,  char direction) {
+
 	double a=0, b=0; 
-	if(abs(Ax-By)<10e-8)  {
-		*Px = 0.5*(Ax+Bx); 
-		*Py = Cy;
-	}	
-	else {
-		a = (Ay-By)/(Ax-Bx); 
-		b = Ay-a*Ax; 
-		if(direction=='x') {
-			*Px = (Cy-b)/a; 
-			*Py = Cy; 
+
+	if(direction=='x') {
+		if(abs(A.x-B.x)<10e-8)  {
+			P->x = 0.5*(A.x+B.x);
+			P->y = C.y;
 		}
-		else if(direction=='y') {
-			*Px = Cx; 
-			*Py = a*Cx+b; 
+		else {
+			a = (A.y-B.y)/(A.x-B.x);
+			b = A.y-a*A.x;
+			P->x = (C.y-b)/a;
+			P->y = C.y;
 		}
-		else
-			cout << "Please Point direction X or Y ! " << endl;
 	}
-}
+	if(direction=='y') {
 
-
-vector<double> getPentWeigth(double Ax, double Ay, double Bx, double By, double Cx, double Cy, double Dx, double Dy, 
-	double Ex, double Ey) {
-	double Qx, Qy, Px, Py, Mx, My, Nx, Ny; //wAx, wAy, wBx, wBy, wCx, wCy, wDx, wDy, wEx, wEy;
-	vector<double> pentWeight; 
-
-	getLinearInterpolate(Ax, Ay, Bx, By, Cx, Cy, &Qx, &Qy, 'x'); 
-	getLinearInterpolate(Dx, Dy, Ex, Ey, Cx, Cy, &Px, &Py, 'x'); 
-
-	getLinearInterpolate(Bx, By, Ex, Ey, Cx, Cy, &Mx, &My, 'x'); 
-	getLinearInterpolate(Ax, Ay, Dx, Dy, Cx, Cy, &Nx, &Ny, 'x'); 
-
-	double dCQ_AB = dist(Cx, Cy, Qx, Qy)*dist(Ax, Ay, Bx, By); 
-	double dCP_DE = dist(Cx, Cy, Px, Py)*dist(Dx, Dy, Ex, Ey); 
-	//double dAB = ; 
-
-	pentWeight.push_back(dist(Qx, Qy, Bx, By)/dCQ_AB);    // wAx
-	pentWeight.push_back(dist(Qx, Qy, Ax, Ay)/dCQ_AB); 		// wBx
-	pentWeight.push_back(-(1/dist(Cx, Cy, Px, Py)+1/dist(Cx, Cy, Qx, Qy)));  //wCx
-	pentWeight.push_back(dist(Px, Py, Ex, Ey)/dCP_DE);   //wDx 
-	pentWeight.push_back(dist(Px, Py, Dx, Dy)/dCP_DE); 			//wEx
-
-	double dCN_AD = dist(Cx, Cy, Nx, Ny)*dist(Ax, Ay, Dx, Dy); 
-	double dCM_BE = dist(Cx, Cy, Mx, My)*dist(Bx, By, Ex, Ey); 
-
-	pentWeight.push_back(dist(Nx, Ny, Dx, Dy)/dCN_AD);   //wAy 
-	pentWeight.push_back(dist(Mx, My, Ex, Ey)/dCM_BE);   //wBy 
-	pentWeight.push_back(-(1/dist(Cx,Cy, Nx, Ny)+1/dist(Cx,Cy,Mx, My)));  //wCy
-	pentWeight.push_back(dist(Ax, Ay, Nx, Ny)/dCN_AD);    //wDy
-	pentWeight.push_back(dist(Bx, By, Mx, My)/dCM_BE);    // wEy
-
-	return pentWeight; 
+		a = (A.y-B.y)/(A.x-B.x);
+		b = A.y-a*A.x;
+		P->x = C.x;
+		P->y = a*C.x+b;
+	}
 
 }
+
+
+
+vector<double> getPentWeigth(Point A, Point B, Point C, Point D, Point E) {
+	vector<double> pentWeight;
+
+	Point P(0, 0, 0);
+	Point Q(0, 0, 0);
+	Point M(0, 0, 0);
+	Point N(0, 0, 0);
+	getLinearInterpolate(A, B, C, &Q, 'x');
+	getLinearInterpolate(D, E, C, &P, 'x');
+
+	getLinearInterpolate(B, E, C, &M, 'y');
+	getLinearInterpolate(A, D, C, &N, 'y');
+
+	double dCQ_AB = dist(C, Q)*dist(A, B);
+	cout << "Dist(D, C) " << Q.x << "\t" << Q.y  << endl;
+	double dCP_DE = dist(C, P)*dist(D, E);
+	//double dAB = ;
+
+	pentWeight.push_back(dist(Q, B)/dCQ_AB);    // wAx
+	pentWeight.push_back(dist(Q, A)/dCQ_AB); 		// wBx
+	pentWeight.push_back(-(1/dist(C, P)+1/dist(C, Q)));  //wCx
+	pentWeight.push_back(dist(P, E)/dCP_DE);   //wDx
+	pentWeight.push_back(dist(P, D)/dCP_DE); 			//wEx
+
+	double dCN_AD = dist(C, N)*dist(A, D);
+	double dCM_BE = dist(C, M)*dist(B, E);
+
+	pentWeight.push_back(dist(N, D)/dCN_AD);   //wAy
+	pentWeight.push_back(dist(M, E)/dCM_BE);   //wBy
+	pentWeight.push_back(-(1/dist(C, N)+1/dist(C,M)));  //wCy
+	pentWeight.push_back(dist(A, N)/dCN_AD);    //wDy
+	pentWeight.push_back(dist(B, M)/dCM_BE);    // wEy
+
+	return pentWeight;
+
+}
+
 
 
 normVec getNormVector(Point A, Point B, Point C) {
@@ -260,11 +261,39 @@ normVec getNormVector(Point A, Point B, Point C) {
 	norm.n0 = (C.y-B.y)*(B.z-A.z)-(C.z-B.z)*(B.y-A.y); 
 	norm.n1 = (C.z-B.z)*(B.x-A.x)-(C.x-B.x)*(B.z-A.z); 
 	norm.n2 = (C.x-B.x)*(B.y-A.y)-(C.y-B.y)*(B.x-A.x); 
+	double s = sqrt(norm.n0*norm.n0 + norm.n1*norm.n1 + norm.n2*norm.n2);
+	norm.n0 = norm.n0/s;
+	norm.n1 = norm.n1/s;
+	norm.n2 = norm.n2/s;
 
 	return norm;
 }
 
+normVec meanNormVector(vector<normVec>  normList) {
+	normVec meanNorm(0, 0, 0);
+	for(int i=0; i<normList.size(); ++i) {
+		meanNorm.n0 += normList[i].n0;
+		meanNorm.n1 += normList[i].n1;
+		meanNorm.n2 += normList[i].n2;
+	}
 
+	double s = meanNorm.n0*meanNorm.n0
+			+ meanNorm.n1*meanNorm.n1
+			+ meanNorm.n2*meanNorm.n2;
+
+	if(s==0) {
+		meanNorm.n0 = 0;
+		meanNorm.n1 = 0;
+		meanNorm.n2 = 0;
+	}
+	else {
+		meanNorm.n0 = meanNorm.n0/s;
+		meanNorm.n1 = meanNorm.n1/s;
+		meanNorm.n2 = meanNorm.n2/s;
+	}
+	return meanNorm;
+
+}
 
 
 

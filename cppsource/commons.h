@@ -56,9 +56,9 @@ public:
 };
 
 
-inline double dist(double Ax, double Ay, double Bx, double By) ;
-inline double area(double Ax, double Ay, double Bx, double By, double Cx, double Cy);
-vector<double> getTriWeight(double Ax, double Ay, double Bx, double By, double Cx, double Cy, double Px, double Py);
+inline double dist(Point A, Point B) ;
+inline double area(Point A, Point B, Point C);
+vector<double> getTriWeight(Point A, Point B, Point C, Point P);
 
 void printerror( int status);
 
@@ -69,9 +69,9 @@ map<string, string> parseConfigure(string confFileName) ;
 double getPenalty(sp_mat* M, vec* r, vec* d, sp_mat* C);
 double lm_arctanh(double x);
 normVec getNormVector(Point A, Point B, Point C);
-void getLinearInterpolate(double Ax, double Ay, double Bx, double By, double Cx, double Cy,	double *Px, double *Py, char direction);
-vector<double> getPentWeigth(double Ax, double Ay, double Bx, double By, double Cx, double Cy, double Dx, double Dy,
-	double Ex, double Ey);
+void getLinearInterpolate(Point A, Point B,  Point C,  Point *P,  char direction);
+vector<double> getPentWeigth(Point A, Point B, Point C, Point D, Point E);
 
+normVec meanNormVector(vector<normVec>  normList);
 
 #endif

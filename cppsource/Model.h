@@ -41,9 +41,29 @@ public:
 	vector<double> dSy1; 
 	vector<double> dSy2; 
 	vector<double> s; 
+	vector<double> something;
+	sp_mat L;
+	sp_mat M;
+	sp_mat r;
+	sp_mat s0;
 
+
+	sp_mat Ds;
+	sp_mat Dphi;
+	sp_mat Hs1;
+	sp_mat Hs2;
+	sp_mat Hphi;
+	sp_mat HtH;
+	sp_mat HphiH;
+	double lambdaS;
+	double lambdaPhi;
+	sp_mat RtR;
+
+	double penalty;
 	vector<vector<normVec> > normV;
+	vector<normVec> meanNormV;
 	map<pair<int, int>,int> posMap;
+
 
 
 public:
@@ -52,8 +72,10 @@ public:
 	vector<double> getDeflectionAngle(Conf* conList, int imgX, int imgY);
 	void updatePosMapping(Image* image,  Conf* conList);
 	sp_mat buildLensMatrix(Image* dataImage,  Conf* constList);
-	void updateNorm(Image* dataImage);
+	void updateGradient(Image* dataImage);
 	void Logging(Image* dataImage, Conf* conList, string outFileName);
+	void updateRegularMatrix();
+	double getPenalty();
 	virtual ~Model();
 };
 
